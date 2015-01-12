@@ -1,10 +1,14 @@
 var A = 'A'.charCodeAt(0);
+var Z = 'Z'.charCodeAt(0);
+var a = 'a'.charCodeAt(0);
+var z = 'z'.charCodeAt(0);
 
 function shiftLetter(letter, n) {
   var code = letter.charCodeAt(0);
-  // TODO: lowercase letters, preserve case
-  // TODO: don't shift non-letters
-  return String.fromCharCode((code - A + n) % 26 + A);
+  var base;
+  if (code >= A && code <= Z) base = A;
+  if (code >= a && code <= z) base = a;
+  return base ? String.fromCharCode((code - base + n) % 26 + base) : letter;
 }
 
 function shift(plaintext, n) {

@@ -15,15 +15,19 @@ function shift(plaintext, n) {
   return plaintext.split('').map(function (letter) { return shiftLetter(letter, n); }).join('');
 }
 
+function renderCell($row, content) {
+  $('<td>').html(content).appendTo($row);
+}
+
 function renderRow($table, i, shifted, reversed, doubled) {
   var $row = $('<tr>').appendTo($table);
   if (doubled) shifted += shifted;
   if (reversed) {
     var reversed = shifted.split('').reverse().join('');
-    $('<td>').html(reversed).appendTo($row);
+    renderCell($row, reversed);
   }
-  $('<td>').html(i).appendTo($row);
-  $('<td>').html(shifted).appendTo($row);
+  renderCell($row, i);
+  renderCell($row, shifted);
 }
 
 function render($plaintext, $table) {

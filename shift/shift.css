@@ -8,10 +8,15 @@ input, table {
 }
 
 table {
+  border-collapse: collapse;
   margin: 0 auto; // center horizontally
 }
 
 td {
   padding: 0 1em;
   white-space: pre;
+}
+
+.max-probability {
+  background: yellow;
 }

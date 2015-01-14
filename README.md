@@ -19,7 +19,7 @@ phrase, for rapid perusal. With some extra features.
 The method for highlighting the most promising outputs is a
 heuristic based on trigram distribution. The repository comes
 with a distribution file that's ready to go. If you're
-interested in re-generate the distribution file, you'll need
+interested in re-generating the distribution file, you'll need
 wget, python, and unzip available on your system. Then run:
 
 ```

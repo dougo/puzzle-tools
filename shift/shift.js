@@ -5,7 +5,7 @@ var z = 'z'.charCodeAt(0);
 
 
 var distribution = null;
-$.get("distribution/trigrams.json").done(function(d){
+$.getJSON("distribution/trigrams.json").done(function(d){
   window.distribution = d;
 });
 

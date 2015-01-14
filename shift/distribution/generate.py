@@ -1,7 +1,4 @@
 # coding: utf-8
-
-# In[99]:
-
 import itertools
 import random
 import sys, os
@@ -9,18 +6,8 @@ import re
 import random
 import json
 
-words = open("npl.txt").read().split("\n")
+words = open("NPLCombinedWordList.txt").read().split("\n")
 words = [re.sub("[^A-Za-z]+", "", x).upper() for x in words]
-
-
-# In[ ]:
-
-
-
-
-# In[131]:
-
-print len(words) 
 
 distribution = {}
 
@@ -46,22 +33,11 @@ vals.sort(key=lambda x:-1* x[1])
 #for v in vals:
 #    print "%s: %s"%v
 
-output = open("/tmp/distribution.json", "w")
+output = open("trigrams.json", "w")
 json.dump(distribution, output)
 output.close()
 
-    
-
-
-# In[135]:
-
-print vals[len(vals)/2]
-
-
-# In[184]:
-
 input_phrase = "pizzazzzebra"
-
 def shift_letter(l, i):
     shifted =  ((ord(l)-65) + i)%26 + 65
     return chr(shifted)
@@ -95,17 +71,4 @@ def score(s):
 
 shifts = caesars(input_phrase)
 shifts = [(score(x), x) for x in shifts]
-          
 shifts.sort(key=lambda x: -1*x[0])
-print len(distribution)
-for s in  shifts:
-    print s
-
-
-# In[193]:
-
-
-print len(filter(lambda x: x[1] > 0, vals))
-print  len(filter(lambda x: x[1] < distribution['EVV'], vals))
-print distribution['EVV']
-

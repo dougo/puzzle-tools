@@ -5,7 +5,7 @@ var z = 'z'.charCodeAt(0);
 
 
 var distribution = null;
-$.get("letter-distribution.json").done(function(d){
+$.get("distribution/trigrams.json").done(function(d){
   window.distribution = d;
 });
 
@@ -69,8 +69,7 @@ function renderRow($table, input, scored, reversed, doubled) {
     var reversed = shifted.split('').reverse().join('');
     renderCell($row, reversed);
   }
-  if (scored && input.max){
-    console.log("Scoring max", $row);
+  if (scored && input.max && input.shifted.length > 4){
     $row.addClass("max-probability");
   } else {
     console.log("Non max", scored, input);
@@ -96,8 +95,9 @@ function range(a, b){
 
 function assignMax(shifts){
   var maxScore = Math.max.apply(null, shifts.map(function(s){return s.score}));
+  var threshold = maxScore - 0.5 * Math.abs(maxScore);
   shifts.forEach(function(s){
-    if (s.score == maxScore){
+    if (s.score >= threshold){
       s.max = true;
     }
   });

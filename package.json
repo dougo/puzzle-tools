@@ -1,0 +1,9 @@
+{
+  "devDependencies": {
+    "minitest": "git://github.com/ysbaddaden/minitest-js.git",
+    "mocha": "^3.2.0"
+  },
+  "scripts": {
+    "test": "mocha -u qunit"
+  }
+}

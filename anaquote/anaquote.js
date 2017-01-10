@@ -12,3 +12,7 @@ function fillIn(enumeration, trigrams) {
 function trigramSelect(trigrams) {
   return $('<select>').append(['___', ...trigrams].map(t => '<option>' + t))
 }
+
+function setTrigrams($el, trigrams) {
+  $el.empty().append(trigrams.map(t => trigramSelect(trigrams)))
+}

@@ -22,23 +22,24 @@ class Anaquote {
     // TODO: there's gotta be a better way to do this...
     let blanks = []
     let blank = ''
-    let i = 1
+    let i = 0
     enumeration.split(/(\d+)/).forEach(token => {
       let len = Number.parseInt(token)
       if (isNaN(len)) {
         blank += token
       } else {
         for (let j = 0; j < len; j++) {
-          blank += '?'
-          if (i++ == 3) {
+          if (i === 3) {
             blanks.push(blank)
             blank = ''
-            i = 1
+            i = 0
           }
+          blank += '?'
+          i++
         }
       }
     })
-    if (i > 1) blanks.push(blank)
+    if (blank.length > 0) blanks.push(blank)
     return blanks
   }
   fillInBlank(i, trigram) {
@@ -62,7 +63,7 @@ class TrigramSelectionView {
   }
   render() {
     let opts = this.model.formattedOptions(this.i).map(([v,t]) => {
-      t = t.replace(' ', '&nbsp;')
+      t = t.replace(/ /g, '&nbsp;')
       return `<option value=${v}>${t}</option>`
     })
     this.$el.empty().append(opts).val(this.model.selection(this.i))

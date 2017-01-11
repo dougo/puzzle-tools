@@ -12,7 +12,9 @@
       $(() => {
         let view = new AnaquoteView('#anaquote')
         view.model.trigrams = ['HEL', 'LOW', 'ORL', 'D']
-        view.model.enumeration = '5 5!'
+        view.model.trigrams = 'EAB EYO FAM FWO HAT IES INA ITE MCG OFW OUS OUT ABC RUF SER TAK ULD URG UTO'.split(' ')
+        view.model.enumeration = '5, 5!'
+        view.model.enumeration = '2 1 6 3 6, 7 5 4 3 2 4 1 4 3 2 4?'
         view.render()
       })
     </script>

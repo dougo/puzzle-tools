@@ -56,6 +56,7 @@ test('makeBlanks', () => {
   assert.equal(['???', '??'], Anaquote.makeBlanks('5'))
   assert.equal([' ???', '??'], Anaquote.makeBlanks(' 5'))
   assert.equal(['???', '?? ?', '???', '?!'], Anaquote.makeBlanks('5 5!'))
+  assert.equal(['???,'], Anaquote.makeBlanks('3,'))
 })
 
 test('fillInBlank', () => {
@@ -113,12 +114,12 @@ test('render', () => {
   let model = new Anaquote()
   let view = new TrigramSelectionView(model, 1)
   model.trigrams = ['HEL', 'LOW', 'ORL', 'D']
-  model.enumeration = '5 5!'
+  model.enumeration = '5  5!'
   assert.equal(view, view.render())
   let $el = view.$el
   let opts = Array.from($el.prop('options'))
   assert.equal(['???', 'HEL', 'LOW', 'ORL', 'D'], opts.map(o => o.value))
-  assert.equal(['??&nbsp;?', 'HE&nbsp;L', 'LO&nbsp;W', 'OR&nbsp;L', 'D?&nbsp;?'], opts.map(o => o.text))
+  assert.equal('??&nbsp;&nbsp;?', opts[0].text)
   assert.equal('???', $el.val())
 
   model.select(1, 'HEL')

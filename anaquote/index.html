@@ -8,11 +8,16 @@
     <link rel=stylesheet href=anaquote.css>
     <script src="../vendor/jquery-3.1.1.min.js"></script>
     <script src=anaquote.js></script>
-    <script>$(() => { setTrigrams($('#trigrams'), ['HEL', 'LOW', 'ORL', 'D']) })</script>
+    <script>
+      $(() => {
+      let view = new AnaquoteView($('#anaquote')[0])
+      view.model.trigrams = ['HEL', 'LOW', 'ORL', 'D']
+      view.render()
+      })
+    </script>
   </head>
   <body>
     <h1>Anaquote</h1>
-    <p class=mono>_____ _____!</p>
-    <p id=trigrams />
+    <p id=anaquote />
   </body>
 </html>

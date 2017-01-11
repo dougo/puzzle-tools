@@ -2,53 +2,78 @@ const { load, assert, refute, $ } = require('./test_helper')
 
 load('anaquote/anaquote.js')
 
-suite('fillIn')
+suite('Anaquote')
 
-test('empty', () => {
-  assert.equal('', fillIn('', []))
+test('options', () => {
+  let model = new Anaquote()
+  model.trigrams = ['HEL', 'LOW', 'ORL', 'D']
+  assert.equal(['___', 'HEL', 'LOW', 'ORL', 'D'], model.options(0))
+  assert.equal(['___', 'HEL', 'LOW', 'ORL', 'D'], model.options(3))
 })
 
-test('hello world', () => {
-  let trigrams = ['HEL', 'LOW', 'ORL', 'D']
-  let enumeration = '5 5!'
-  assert.equal('HELLO WORLD!', fillIn(enumeration, trigrams))
+test('selection and select', () => {
+  let model = new Anaquote()
+  model.trigrams = ['HEL', 'LOW', 'ORL', 'D']
+  assert.equal('___', model.selection(0))
+  assert.equal('___', model.selection(3))
+
+  model.select(0, 'HEL')
+  model.select(3, 'D')
+  assert.equal('HEL', model.selection(0))
+  assert.equal('D', model.selection(3))
 })
 
-suite('trigramSelect')
+test('quotation', () => {
+  let model = new Anaquote()
+  model.trigrams = ['HEL', 'LOW', 'ORL', 'D']
+  model.enumeration = '5 5!'
+  assert.equal('HELLO WORLD!', model.quotation())
+})
 
-test('options are trigrams plus blank', () => {
-  let trigrams = ['HEL', 'LOW', 'ORL', 'D']
-  let $select = trigramSelect(trigrams)
+suite('AnaquoteView')
+
+test('buildSelect', () => {
+  let view = new AnaquoteView($('<div>')[0])
+  view.model.trigrams = ['HEL', 'LOW', 'ORL', 'D']
+  let $select = view.buildSelect()
   assert.is('select', $select)
   assert.hasClass('mono', $select)
   let opts = Array.from($select.prop('options'))
-  assert.equal(['___', ...trigrams], opts.map(o => o.text))
-  assert.equal(['___', ...trigrams], opts.map(o => o.value))
+  assert.equal(view.model.options(0), opts.map(o => o.text))
+  assert.equal(view.model.options(0), opts.map(o => o.value))
+  // TODO: use model.selection(0)
 })
 
-suite('setTrigrams')
-
-test('adds selects to $el', () => {
-  let trigrams = ['HEL', 'LOW', 'ORL', 'D']
+test('constructor', () => {
   let $el = $('<div>')
-  setTrigrams($el, trigrams)
-  assert.equal(4, $el.children().length)
-  let $select = $el.children().first()
+  let view = new AnaquoteView($el[0])
+  assert.equal($el[0], view.el)
+  assert.equal($el, view.$el)
+  assert.instanceOf(Anaquote, view.model)
+})
+
+test('render', () => {
+  let view = new AnaquoteView($('<div>')[0])
+  view.model.trigrams = ['HEL', 'LOW', 'ORL', 'D']
+  assert.equal(view, view.render())
+  assert.equal(4, view.$el.children().length)
+  let $select = view.$el.children().first()
   assert.is('select', $select)
   assert.equal(5, $select.prop('options').length)
 })
 
-test('empties $el first', () => {
-  let trigrams = ['HEL', 'LOW', 'ORL', 'D']
-  let $el = $('<div><div>')
-  setTrigrams($el, trigrams)
-  assert.equal(4, $el.children().length)
+test('render empties $el first', () => {
+  let view = new AnaquoteView($('<div><div>')[0])
+  view.model.trigrams = ['HEL', 'LOW', 'ORL', 'D']
+  view.render()
+  assert.equal(4, view.$el.children().length)
 })
 
 test('selecting non-blank option removes it from other selects', () => {
-  let trigrams = ['HEL', 'LOW', 'ORL', 'D']
-  let $el = $('<div>')
-  setTrigrams($el, trigrams)
+  let view = new AnaquoteView($('<div>')[0])
+  view.model.trigrams = ['HEL', 'LOW', 'ORL', 'D']
+  let $el = view.render().$el
+
   let $first = $el.children().first()
   let $last = $el.children().last()
   function optionValues($select) { return Array.from($select.prop('options'), o => o.value) }

@@ -118,7 +118,7 @@ test('render', () => {
   let $el = view.$el
   let opts = Array.from($el.prop('options'))
   assert.equal(['???', 'HEL', 'LOW', 'ORL', 'D'], opts.map(o => o.value))
-  assert.equal(['?? ?', 'HE L', 'LO W', 'OR L', 'D? ?'], opts.map(o => o.text))
+  assert.equal(['??&nbsp;?', 'HE&nbsp;L', 'LO&nbsp;W', 'OR&nbsp;L', 'D?&nbsp;?'], opts.map(o => o.text))
   assert.equal('???', $el.val())
 
   model.select(1, 'HEL')

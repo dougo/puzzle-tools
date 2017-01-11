@@ -61,7 +61,10 @@ class TrigramSelectionView {
     this.$el.change(() => { this.model.select(this.i, this.$el.val()) })
   }
   render() {
-    let opts = this.model.formattedOptions(this.i).map(([v,t]) => `<option value=${v}>${t}</option>`)
+    let opts = this.model.formattedOptions(this.i).map(([v,t]) => {
+      t = t.replace(' ', '&nbsp;')
+      return `<option value=${v}>${t}</option>`
+    })
     this.$el.empty().append(opts).val(this.model.selection(this.i))
     return this
   }

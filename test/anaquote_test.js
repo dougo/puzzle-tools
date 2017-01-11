@@ -8,15 +8,15 @@ test('options', () => {
   let model = new Anaquote()
   model.trigrams = ['HEL', 'LOW', 'ORL', 'D']
   model.enumeration = '5 5!'
-  assert.equal(['___', 'HEL', 'LOW', 'ORL', 'D'], model.options(0))
-  assert.equal(['___', 'HEL', 'LOW', 'ORL', 'D'], model.options(3))
+  assert.equal(['???', 'HEL', 'LOW', 'ORL', 'D'], model.options(0))
+  assert.equal(['???', 'HEL', 'LOW', 'ORL', 'D'], model.options(3))
 })
 
 test('selection and select', () => {
   let model = new Anaquote()
   model.trigrams = ['HEL', 'LOW', 'ORL', 'D']
-  assert.equal('___', model.selection(0))
-  assert.equal('___', model.selection(3))
+  assert.equal('???', model.selection(0))
+  assert.equal('???', model.selection(3))
 
   model.select(0, 'HEL')
   model.select(3, 'D')
@@ -36,35 +36,35 @@ test('selecting non-blank option removes it from other options', () => {
   // Put LOW back into other selects.
   assert.includes(model.options(3),  'LOW')
 
-  model.select(0, '___')
+  model.select(0, '???')
   // Don't remove blank from other selects.
-  assert.includes(model.options(3),  '___')
+  assert.includes(model.options(3),  '???')
 
   model.select(0, 'HEL')
   // Don't put blank back into other selects again!
-  assert.equal(1, model.options(3).filter(v => v === '___').length)
+  assert.equal(1, model.options(3).filter(v => v === '???').length)
 })
 
 test('blanks', () => {
   let model = new Anaquote()
   model.enumeration = '5 5!'
-  assert.equal(['___', '__ _', '___', '_!'], model.blanks)
+  assert.equal(['???', '?? ?', '???', '?!'], model.blanks)
 })
 
 test('makeBlanks', () => {
-  assert.equal(['___'], Anaquote.makeBlanks('3'))
-  assert.equal(['___', '__'], Anaquote.makeBlanks('5'))
-  assert.equal([' ___', '__'], Anaquote.makeBlanks(' 5'))
-  assert.equal(['___', '__ _', '___', '_!'], Anaquote.makeBlanks('5 5!'))
+  assert.equal(['???'], Anaquote.makeBlanks('3'))
+  assert.equal(['???', '??'], Anaquote.makeBlanks('5'))
+  assert.equal([' ???', '??'], Anaquote.makeBlanks(' 5'))
+  assert.equal(['???', '?? ?', '???', '?!'], Anaquote.makeBlanks('5 5!'))
 })
 
 test('fillInBlank', () => {
   let model = new Anaquote()
   model.enumeration = '5 5!'
   assert.equal('HEL', model.fillInBlank(0, 'HEL'))
-  assert.equal('D__', model.fillInBlank(0, 'D'))
+  assert.equal('D??', model.fillInBlank(0, 'D'))
   assert.equal('LO W', model.fillInBlank(1, 'LOW'))
-  assert.equal('D_ _', model.fillInBlank(1, 'D'))
+  assert.equal('D? ?', model.fillInBlank(1, 'D'))
   assert.equal('ORL', model.fillInBlank(2, 'ORL'))
   assert.equal('D!', model.fillInBlank(3, 'D'))
   assert.equal('H!', model.fillInBlank(3, 'HEL'))
@@ -74,13 +74,13 @@ test('formattedOptions', () => {
   let model = new Anaquote()
   model.trigrams = ['HEL', 'LOW', 'ORL', 'D']
   model.enumeration = '5 5!'
-  assert.equal([['___', '___'], ['HEL', 'HEL'], ['LOW', 'LOW'], ['ORL', 'ORL'], ['D', 'D__']],
+  assert.equal([['???', '???'], ['HEL', 'HEL'], ['LOW', 'LOW'], ['ORL', 'ORL'], ['D', 'D??']],
                model.formattedOptions(0))
-  assert.equal([['___', '__ _'], ['HEL', 'HE L'], ['LOW', 'LO W'], ['ORL', 'OR L'], ['D', 'D_ _']],
+  assert.equal([['???', '?? ?'], ['HEL', 'HE L'], ['LOW', 'LO W'], ['ORL', 'OR L'], ['D', 'D? ?']],
                model.formattedOptions(1))
-  assert.equal([['___', '___'], ['HEL', 'HEL'], ['LOW', 'LOW'], ['ORL', 'ORL'], ['D', 'D__']],
+  assert.equal([['???', '???'], ['HEL', 'HEL'], ['LOW', 'LOW'], ['ORL', 'ORL'], ['D', 'D??']],
                model.formattedOptions(2))
-  assert.equal([['___', '_!'], ['HEL', 'H!'], ['LOW', 'L!'], ['ORL', 'O!'], ['D', 'D!']],
+  assert.equal([['???', '?!'], ['HEL', 'H!'], ['LOW', 'L!'], ['ORL', 'O!'], ['D', 'D!']],
                model.formattedOptions(3))
 })
 
@@ -88,7 +88,7 @@ test('quotation', () => {
   let model = new Anaquote()
   model.trigrams = ['D', 'HEL', 'ORL', 'LOW']
   model.enumeration = '5 5!'
-  assert.equal('_____ _____!', model.quotation())
+  assert.equal('????? ?????!', model.quotation())
   model.select(0, 'HEL')
   model.select(1, 'LOW')
   model.select(2, 'ORL')
@@ -117,18 +117,18 @@ test('render', () => {
   assert.equal(view, view.render())
   let $el = view.$el
   let opts = Array.from($el.prop('options'))
-  assert.equal(['___', 'HEL', 'LOW', 'ORL', 'D'], opts.map(o => o.value))
-  assert.equal(['__ _', 'HE L', 'LO W', 'OR L', 'D_ _'], opts.map(o => o.text))
-  assert.equal('___', $el.val())
+  assert.equal(['???', 'HEL', 'LOW', 'ORL', 'D'], opts.map(o => o.value))
+  assert.equal(['?? ?', 'HE L', 'LO W', 'OR L', 'D? ?'], opts.map(o => o.text))
+  assert.equal('???', $el.val())
 
   model.select(1, 'HEL')
   view.render()
-  assert.equal(['___', 'HEL', 'LOW', 'ORL', 'D'], Array.from($el.prop('options')).map(o => o.value))
+  assert.equal(['???', 'HEL', 'LOW', 'ORL', 'D'], Array.from($el.prop('options')).map(o => o.value))
   assert.equal('HEL', $el.val())
 
   model.select(2, 'LOW')
   view.render()
-  assert.equal(['___', 'HEL', 'ORL', 'D'], Array.from($el.prop('options')).map(o => o.value))
+  assert.equal(['???', 'HEL', 'ORL', 'D'], Array.from($el.prop('options')).map(o => o.value))
 })
 
 test('selecting an option updates the model', () => {
@@ -191,7 +191,7 @@ test('renderSubviews', () => {
   view.model.select(0, 'LOW')
   view.renderSubviews()
   assert.equal('LOW', subview0.$el.val())
-  assert.equal(['___', 'HEL', 'ORL', 'D'], Array.from(subview1.$el.prop('options')).map(o => o.value))
+  assert.equal(['???', 'HEL', 'ORL', 'D'], Array.from(subview1.$el.prop('options')).map(o => o.value))
 })
 
 test('selecting an option re-renders subviews', () => {

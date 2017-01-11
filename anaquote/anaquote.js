@@ -1,12 +1,12 @@
 class Anaquote {
   set trigrams (trigrams) {
     this._trigrams = trigrams
-    this.selections = trigrams.map(t => '___')
+    this.selections = trigrams.map(t => '???')
   }
   options(i) {
     let otherSelections = new Set(this.selections)
     otherSelections.delete(this.selection(i))
-    return ['___', ...this._trigrams.filter(t => !otherSelections.has(t))]
+    return ['???', ...this._trigrams.filter(t => !otherSelections.has(t))]
   }
   selection(i) {
     return this.selections[i]
@@ -29,7 +29,7 @@ class Anaquote {
         blank += token
       } else {
         for (let j = 0; j < len; j++) {
-          blank += '_'
+          blank += '?'
           if (i++ == 3) {
             blanks.push(blank)
             blank = ''
@@ -42,8 +42,8 @@ class Anaquote {
     return blanks
   }
   fillInBlank(i, trigram) {
-    let letters = (trigram + '___').split('')
-    return this.blanks[i].split('').map(blank => blank === '_' ? letters.shift() : blank).join('')
+    let letters = (trigram + '???').split('')
+    return this.blanks[i].split('').map(blank => blank === '?' ? letters.shift() : blank).join('')
   }
   formattedOptions(i) {
     return this.options(i).map(o => [o, this.fillInBlank(i, o)])

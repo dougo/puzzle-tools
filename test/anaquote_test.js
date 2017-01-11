@@ -132,13 +132,26 @@ test('render empties $el first', () => {
   assert.equal(4, view.$el.children().length)
 })
 
-test('selecting an option updates the model and re-renders', () => {
+test('renderSubviews', () => {
   let view = new AnaquoteView('<div>')
   view.model.trigrams = ['HEL', 'LOW', 'ORL', 'D']
-  let $el = view.render().$el
-  
-  $el.children().first().val('LOW').change()
-  assert.equal('LOW', view.model.selection(0))
-  let lastOpts = Array.from(view.$el.children().last().prop('options'))
-  refute.includes(lastOpts.map(o => o.value), 'LOW')
+  view.render()
+  let subview0 = view.subviews[0]
+  let subview1 = view.subviews[1]
+  view.model.select(0, 'LOW')
+  view.renderSubviews()
+  assert.equal('LOW', subview0.$el.val())
+  assert.equal(['___', 'HEL', 'ORL', 'D'], Array.from(subview1.$el.prop('options')).map(o => o.value))
+})
+
+test('selecting an option re-renders subviews', () => {
+  let view = new AnaquoteView('<div>')
+  view.model.trigrams = ['HEL', 'LOW', 'ORL', 'D']
+  view.render()
+  let subview = view.subviews[0]
+  let $el = subview.$el
+  $el.val('LOW').change()
+  assert.equal(subview, view.subviews[0])
+  assert.equal($el, view.subviews[0].$el)
+  assert.equal('LOW', subview.$el.val())
 })

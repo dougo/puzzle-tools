@@ -1,7 +1,4 @@
 class Anaquote {
-  get trigrams () {
-    return this._trigrams
-  }
   set trigrams (trigrams) {
     this._trigrams = trigrams
     this.selections = trigrams.map(t => '___')
@@ -9,7 +6,7 @@ class Anaquote {
   options(i) {
     let otherSelections = new Set(this.selections)
     otherSelections.delete(this.selection(i))
-    return ['___', ...this.trigrams.filter(t => !otherSelections.has(t))]
+    return ['___', ...this._trigrams.filter(t => !otherSelections.has(t))]
   }
   selection(i) {
     return this.selections[i]
@@ -18,7 +15,7 @@ class Anaquote {
     this.selections[i] = trigram
   }
   quotation() {
-    let text = this.trigrams.join('')
+    let text = this._trigrams.join('')
     return this.enumeration.split(/(\d+)/).map(token => {
       let len = Number.parseInt(token)
       if (isNaN(len)) return token
@@ -48,16 +45,19 @@ class AnaquoteView {
     this.$el = $(el)
     this.model = new Anaquote()
   }
-  buildSubviews() {
-    this.subviews = this.model.trigrams.map((t,i) => new TrigramSelectionView(this.model, i))
-  }
   render() {
     this.buildSubviews()
     this.$el.empty().append(this.subviews.map(v => v.render().$el))
     this.$el.children().change(evt => {
       // TODO: render when the model changes, not here
-      this.render()
+      this.renderSubviews()
     })
     return this
+  }
+  buildSubviews() {
+    this.subviews = this.model.selections.map((t,i) => new TrigramSelectionView(this.model, i))
+  }
+  renderSubviews() {
+    this.subviews.forEach(v => v.render())
   }
 }

@@ -53,8 +53,14 @@ test('quotation', () => {
 
 suite('AnaquoteView')
 
+test('constructor', () => {
+  let view = new AnaquoteView('<div>')
+  assert.is('div', view.$el)
+  assert.instanceOf(Anaquote, view.model)
+})
+
 test('buildSelect', () => {
-  let view = new AnaquoteView($('<div>')[0])
+  let view = new AnaquoteView('<div>')
   view.model.trigrams = ['HEL', 'LOW', 'ORL', 'D']
   view.model.select(0, 'HEL')
   let $select = view.buildSelect(0)
@@ -70,16 +76,8 @@ test('buildSelect', () => {
   assert.equal(view.model.options(1), opts.map(o => o.value))
 })
 
-test('constructor', () => {
-  let $el = $('<div>')
-  let view = new AnaquoteView($el[0])
-  assert.equal($el[0], view.el)
-  assert.equal($el, view.$el)
-  assert.instanceOf(Anaquote, view.model)
-})
-
 test('render', () => {
-  let view = new AnaquoteView($('<div>')[0])
+  let view = new AnaquoteView('<div>')
   view.model.trigrams = ['HEL', 'LOW', 'ORL', 'D']
   assert.equal(view, view.render())
   assert.equal(4, view.$el.children().length)
@@ -89,14 +87,14 @@ test('render', () => {
 })
 
 test('render empties $el first', () => {
-  let view = new AnaquoteView($('<div><div>')[0])
+  let view = new AnaquoteView('<div><div>')
   view.model.trigrams = ['HEL', 'LOW', 'ORL', 'D']
   view.render()
   assert.equal(4, view.$el.children().length)
 })
 
 test('selecting an option updates the model and re-renders', () => {
-  let view = new AnaquoteView($('<div>')[0])
+  let view = new AnaquoteView('<div>')
   view.model.trigrams = ['HEL', 'LOW', 'ORL', 'D']
   let $el = view.render().$el
   

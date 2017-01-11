@@ -10,9 +10,9 @@
     <script src=anaquote.js></script>
     <script>
       $(() => {
-      let view = new AnaquoteView($('#anaquote')[0])
-      view.model.trigrams = ['HEL', 'LOW', 'ORL', 'D']
-      view.render()
+        let view = new AnaquoteView('#anaquote')
+        view.model.trigrams = ['HEL', 'LOW', 'ORL', 'D']
+        view.render()
       })
     </script>
   </head>

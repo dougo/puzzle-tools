@@ -31,12 +31,9 @@ class Anaquote {
 
 class AnaquoteView {
   constructor (el) {
-    this.el = el
+    this.$el = $(el)
     this.model = new Anaquote()
   }
-  get el ()   { return this._el }
-  set el (el) { this._el = el; this._$el = $(el) }
-  get $el ()  { return this._$el }
   buildSelect(i) {
     let opts = this.model.options(i).map(t => `<option>${t}</option>`)
     // TODO: make a SelectionView

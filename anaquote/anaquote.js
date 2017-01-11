@@ -10,9 +10,18 @@ function fillIn(enumeration, trigrams) {
 }
 
 function trigramSelect(trigrams) {
-  return $('<select>').append(['___', ...trigrams].map(t => '<option>' + t))
+  return $('<select>').addClass('mono').append(['___', ...trigrams].map(t => `<option>${t}</option>`))
 }
 
 function setTrigrams($el, trigrams) {
-  $el.empty().append(trigrams.map(t => trigramSelect(trigrams)))
+  let $selects = $el.empty().append(trigrams.map(t => trigramSelect(trigrams))).children()
+  $selects.change(function () {
+    let trigram = this.value
+    let prev = $(this).data('prev')
+    if (prev && prev !== '___')
+      $selects.not(this).append(`<option>${prev}</option>`)
+    if (trigram !== '___')
+      $selects.not(this).find('option').filter((i,o) => o.value === trigram).remove()
+    $(this).data('prev', trigram)
+  })
 }

@@ -29,22 +29,32 @@ class Anaquote {
   }
 }
 
+class TrigramSelectionView {
+  constructor (model, i) {
+    this.model = model
+    this.i = i
+    this.$el = $('<select>').addClass('mono')
+  }
+  render() {
+    let opts = this.model.options(this.i).map(t => `<option>${t}</option>`)
+    this.$el.empty().append(opts).val(this.model.selection(this.i))
+    this.$el.change(() => { this.model.select(this.i, this.$el.val()) })
+    return this
+  }
+}
+
 class AnaquoteView {
   constructor (el) {
     this.$el = $(el)
     this.model = new Anaquote()
   }
-  buildSelect(i) {
-    let opts = this.model.options(i).map(t => `<option>${t}</option>`)
-    // TODO: make a SelectionView
-    return $('<select>').addClass('mono').append(opts).val(this.model.selection(i)).data('i', i)
+  buildSubviews() {
+    this.subviews = this.model.trigrams.map((t,i) => new TrigramSelectionView(this.model, i))
   }
   render() {
-    this.$el.empty().append(this.model.trigrams.map((t,i) => this.buildSelect(i)))
-    let $selects = this.$el.children()
-    $selects.change(evt => {
-      let trigram = evt.target.value
-      this.model.select($(evt.target).data('i'), trigram)
+    this.buildSubviews()
+    this.$el.empty().append(this.subviews.map(v => v.render().$el))
+    this.$el.children().change(evt => {
       // TODO: render when the model changes, not here
       this.render()
     })

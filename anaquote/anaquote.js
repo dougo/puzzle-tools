@@ -14,15 +14,42 @@ class Anaquote {
   select(i, trigram) {
     this.selections[i] = trigram
   }
-  quotation() {
-    let text = this._trigrams.join('')
-    return this.enumeration.split(/(\d+)/).map(token => {
+  set enumeration (enumeration) {
+    this._enumeration = enumeration
+    this.blanks = this.constructor.makeBlanks(enumeration)
+  }
+  static makeBlanks(enumeration) {
+    // TODO: there's gotta be a better way to do this...
+    let blanks = []
+    let blank = ''
+    let i = 1
+    enumeration.split(/(\d+)/).forEach(token => {
       let len = Number.parseInt(token)
-      if (isNaN(len)) return token
-      let word = text.substr(0, len)
-      text = text.substr(len)
-      return word
-    }).join('')
+      if (isNaN(len)) {
+        blank += token
+      } else {
+        for (let j = 0; j < len; j++) {
+          blank += '_'
+          if (i++ == 3) {
+            blanks.push(blank)
+            blank = ''
+            i = 1
+          }
+        }
+      }
+    })
+    if (i > 1) blanks.push(blank)
+    return blanks
+  }
+  fillInBlank(i, trigram) {
+    let letters = (trigram + '___').split('')
+    return this.blanks[i].split('').map(blank => blank === '_' ? letters.shift() : blank).join('')
+  }
+  formattedOptions(i) {
+    return this.options(i).map(o => [o, this.fillInBlank(i, o)])
+  }
+  quotation() {
+    return this.selections.map((t, i) => this.fillInBlank(i, t)).join('')
   }
 }
 
@@ -34,7 +61,7 @@ class TrigramSelectionView {
     this.$el.change(() => { this.model.select(this.i, this.$el.val()) })
   }
   render() {
-    let opts = this.model.options(this.i).map(t => `<option>${t}</option>`)
+    let opts = this.model.formattedOptions(this.i).map(([v,t]) => `<option value=${v}>${t}</option>`)
     this.$el.empty().append(opts).val(this.model.selection(this.i))
     return this
   }

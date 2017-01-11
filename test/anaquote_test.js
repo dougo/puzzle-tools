@@ -7,6 +7,7 @@ suite('Anaquote')
 test('options', () => {
   let model = new Anaquote()
   model.trigrams = ['HEL', 'LOW', 'ORL', 'D']
+  model.enumeration = '5 5!'
   assert.equal(['___', 'HEL', 'LOW', 'ORL', 'D'], model.options(0))
   assert.equal(['___', 'HEL', 'LOW', 'ORL', 'D'], model.options(3))
 })
@@ -44,10 +45,54 @@ test('selecting non-blank option removes it from other options', () => {
   assert.equal(1, model.options(3).filter(v => v === '___').length)
 })
 
-test('quotation', () => {
+test('blanks', () => {
+  let model = new Anaquote()
+  model.enumeration = '5 5!'
+  assert.equal(['___', '__ _', '___', '_!'], model.blanks)
+})
+
+test('makeBlanks', () => {
+  assert.equal(['___'], Anaquote.makeBlanks('3'))
+  assert.equal(['___', '__'], Anaquote.makeBlanks('5'))
+  assert.equal([' ___', '__'], Anaquote.makeBlanks(' 5'))
+  assert.equal(['___', '__ _', '___', '_!'], Anaquote.makeBlanks('5 5!'))
+})
+
+test('fillInBlank', () => {
+  let model = new Anaquote()
+  model.enumeration = '5 5!'
+  assert.equal('HEL', model.fillInBlank(0, 'HEL'))
+  assert.equal('D__', model.fillInBlank(0, 'D'))
+  assert.equal('LO W', model.fillInBlank(1, 'LOW'))
+  assert.equal('D_ _', model.fillInBlank(1, 'D'))
+  assert.equal('ORL', model.fillInBlank(2, 'ORL'))
+  assert.equal('D!', model.fillInBlank(3, 'D'))
+  assert.equal('H!', model.fillInBlank(3, 'HEL'))
+})
+
+test('formattedOptions', () => {
   let model = new Anaquote()
   model.trigrams = ['HEL', 'LOW', 'ORL', 'D']
   model.enumeration = '5 5!'
+  assert.equal([['___', '___'], ['HEL', 'HEL'], ['LOW', 'LOW'], ['ORL', 'ORL'], ['D', 'D__']],
+               model.formattedOptions(0))
+  assert.equal([['___', '__ _'], ['HEL', 'HE L'], ['LOW', 'LO W'], ['ORL', 'OR L'], ['D', 'D_ _']],
+               model.formattedOptions(1))
+  assert.equal([['___', '___'], ['HEL', 'HEL'], ['LOW', 'LOW'], ['ORL', 'ORL'], ['D', 'D__']],
+               model.formattedOptions(2))
+  assert.equal([['___', '_!'], ['HEL', 'H!'], ['LOW', 'L!'], ['ORL', 'O!'], ['D', 'D!']],
+               model.formattedOptions(3))
+})
+
+test('quotation', () => {
+  let model = new Anaquote()
+  model.trigrams = ['D', 'HEL', 'ORL', 'LOW']
+  model.enumeration = '5 5!'
+  assert.equal('_____ _____!', model.quotation())
+  model.select(0, 'HEL')
+  model.select(1, 'LOW')
+  model.select(2, 'ORL')
+  model.select(3, 'D')
   assert.equal('HELLO WORLD!', model.quotation())
 })
 
@@ -66,21 +111,22 @@ test('constructor', () => {
 
 test('render', () => {
   let model = new Anaquote()
-  let view = new TrigramSelectionView(model, 0)
+  let view = new TrigramSelectionView(model, 1)
   model.trigrams = ['HEL', 'LOW', 'ORL', 'D']
+  model.enumeration = '5 5!'
   assert.equal(view, view.render())
   let $el = view.$el
   let opts = Array.from($el.prop('options'))
-  assert.equal(['___', 'HEL', 'LOW', 'ORL', 'D'], opts.map(o => o.text))
   assert.equal(['___', 'HEL', 'LOW', 'ORL', 'D'], opts.map(o => o.value))
+  assert.equal(['__ _', 'HE L', 'LO W', 'OR L', 'D_ _'], opts.map(o => o.text))
   assert.equal('___', $el.val())
 
-  model.select(0, 'HEL')
+  model.select(1, 'HEL')
   view.render()
   assert.equal(['___', 'HEL', 'LOW', 'ORL', 'D'], Array.from($el.prop('options')).map(o => o.value))
   assert.equal('HEL', $el.val())
 
-  model.select(1, 'LOW')
+  model.select(2, 'LOW')
   view.render()
   assert.equal(['___', 'HEL', 'ORL', 'D'], Array.from($el.prop('options')).map(o => o.value))
 })
@@ -88,6 +134,7 @@ test('render', () => {
 test('selecting an option updates the model', () => {
   let model = new Anaquote()
   model.trigrams = ['HEL', 'LOW', 'ORL', 'D']
+  model.enumeration = '5 5!'
   let view = new TrigramSelectionView(model, 0)
   let $el = view.render().$el
   $el.val('LOW').change()
@@ -117,6 +164,7 @@ test('buildSubviews', () => {
 test('render', () => {
   let view = new AnaquoteView('<div>')
   view.model.trigrams = ['HEL', 'LOW', 'ORL', 'D']
+  view.model.enumeration = '5 5!'
   assert.equal(view, view.render())
   assert.equal(4, view.subviews.length)
   assert.equal(4, view.$el.children().length)
@@ -128,6 +176,7 @@ test('render', () => {
 test('render empties $el first', () => {
   let view = new AnaquoteView('<div><div>')
   view.model.trigrams = ['HEL', 'LOW', 'ORL', 'D']
+  view.model.enumeration = '5 5!'
   view.render()
   assert.equal(4, view.$el.children().length)
 })
@@ -135,6 +184,7 @@ test('render empties $el first', () => {
 test('renderSubviews', () => {
   let view = new AnaquoteView('<div>')
   view.model.trigrams = ['HEL', 'LOW', 'ORL', 'D']
+  view.model.enumeration = '5 5!'
   view.render()
   let subview0 = view.subviews[0]
   let subview1 = view.subviews[1]
@@ -147,6 +197,7 @@ test('renderSubviews', () => {
 test('selecting an option re-renders subviews', () => {
   let view = new AnaquoteView('<div>')
   view.model.trigrams = ['HEL', 'LOW', 'ORL', 'D']
+  view.model.enumeration = '5 5!'
   view.render()
   let subview = view.subviews[0]
   let $el = subview.$el

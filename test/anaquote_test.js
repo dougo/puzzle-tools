@@ -23,6 +23,27 @@ test('selection and select', () => {
   assert.equal('D', model.selection(3))
 })
 
+test('selecting non-blank option removes it from other options', () => {
+  let model = new Anaquote()
+  model.trigrams = ['HEL', 'LOW', 'ORL', 'D']
+
+  model.select(0, 'LOW')
+  assert.includes(model.options(0), 'LOW')
+  refute.includes(model.options(3), 'LOW')
+
+  model.select(0, 'ORL')
+  // Put LOW back into other selects.
+  assert.includes(model.options(3),  'LOW')
+
+  model.select(0, '___')
+  // Don't remove blank from other selects.
+  assert.includes(model.options(3),  '___')
+
+  model.select(0, 'HEL')
+  // Don't put blank back into other selects again!
+  assert.equal(1, model.options(3).filter(v => v === '___').length)
+})
+
 test('quotation', () => {
   let model = new Anaquote()
   model.trigrams = ['HEL', 'LOW', 'ORL', 'D']
@@ -35,13 +56,18 @@ suite('AnaquoteView')
 test('buildSelect', () => {
   let view = new AnaquoteView($('<div>')[0])
   view.model.trigrams = ['HEL', 'LOW', 'ORL', 'D']
-  let $select = view.buildSelect()
+  view.model.select(0, 'HEL')
+  let $select = view.buildSelect(0)
   assert.is('select', $select)
   assert.hasClass('mono', $select)
   let opts = Array.from($select.prop('options'))
   assert.equal(view.model.options(0), opts.map(o => o.text))
   assert.equal(view.model.options(0), opts.map(o => o.value))
-  // TODO: use model.selection(0)
+  assert.equal('HEL', $select.val())
+
+  $select = view.buildSelect(1)
+  opts = Array.from($select.prop('options'))
+  assert.equal(view.model.options(1), opts.map(o => o.value))
 })
 
 test('constructor', () => {
@@ -69,29 +95,13 @@ test('render empties $el first', () => {
   assert.equal(4, view.$el.children().length)
 })
 
-test('selecting non-blank option removes it from other selects', () => {
+test('selecting an option updates the model and re-renders', () => {
   let view = new AnaquoteView($('<div>')[0])
   view.model.trigrams = ['HEL', 'LOW', 'ORL', 'D']
   let $el = view.render().$el
-
-  let $first = $el.children().first()
-  let $last = $el.children().last()
-  function optionValues($select) { return Array.from($select.prop('options'), o => o.value) }
-  assert.includes(optionValues($first), 'LOW')
-  assert.includes(optionValues($last),  'LOW')
-  $first.val('LOW').change()
-  assert.includes(optionValues($first), 'LOW')
-  refute.includes(optionValues($last),  'LOW')
-
-  $first.val('ORL').change()
-  // Put LOW back into other selects.
-  assert.includes(optionValues($last),  'LOW')
-
-  $first.val('___').change()
-  // Don't remove blank from other selects.
-  assert.includes(optionValues($last),  '___')
-
-  $first.val('HEL').change()
-  // Don't put blank back into other selects again!
-  assert.equal(1, optionValues($last).filter(v => v === '___').length)
+  
+  $el.children().first().val('LOW').change()
+  assert.equal('LOW', view.model.selection(0))
+  let lastOpts = Array.from(view.$el.children().last().prop('options'))
+  refute.includes(lastOpts.map(o => o.value), 'LOW')
 })

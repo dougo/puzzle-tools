@@ -7,7 +7,9 @@ class Anaquote {
     this.selections = trigrams.map(t => '___')
   }
   options(i) {
-    return ['___', ...this.trigrams]
+    let otherSelections = new Set(this.selections)
+    otherSelections.delete(this.selection(i))
+    return ['___', ...this.trigrams.filter(t => !otherSelections.has(t))]
   }
   selection(i) {
     return this.selections[i]
@@ -35,20 +37,19 @@ class AnaquoteView {
   get el ()   { return this._el }
   set el (el) { this._el = el; this._$el = $(el) }
   get $el ()  { return this._$el }
-  buildSelect() {
-    return $('<select>').addClass('mono').append(this.model.options(0).map(t => `<option>${t}</option>`))
+  buildSelect(i) {
+    let opts = this.model.options(i).map(t => `<option>${t}</option>`)
+    // TODO: make a SelectionView
+    return $('<select>').addClass('mono').append(opts).val(this.model.selection(i)).data('i', i)
   }
   render() {
-    this.$el.empty().append(this.model.trigrams.map(t => this.buildSelect()))
+    this.$el.empty().append(this.model.trigrams.map((t,i) => this.buildSelect(i)))
     let $selects = this.$el.children()
-    $selects.change(function () {
-      let trigram = this.value
-      let prev = $(this).data('prev')
-      if (prev && prev !== '___')
-        $selects.not(this).append(`<option>${prev}</option>`)
-      if (trigram !== '___')
-        $selects.not(this).find('option').filter((i,o) => o.value === trigram).remove()
-      $(this).data('prev', trigram)
+    $selects.change(evt => {
+      let trigram = evt.target.value
+      this.model.select($(evt.target).data('i'), trigram)
+      // TODO: render when the model changes, not here
+      this.render()
     })
     return this
   }

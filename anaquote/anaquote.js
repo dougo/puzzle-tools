@@ -31,11 +31,11 @@ class TrigramSelectionView {
     this.model = model
     this.i = i
     this.$el = $('<select>').addClass('mono')
+    this.$el.change(() => { this.model.select(this.i, this.$el.val()) })
   }
   render() {
     let opts = this.model.options(this.i).map(t => `<option>${t}</option>`)
     this.$el.empty().append(opts).val(this.model.selection(this.i))
-    this.$el.change(() => { this.model.select(this.i, this.$el.val()) })
     return this
   }
 }
@@ -44,14 +44,11 @@ class AnaquoteView {
   constructor (el) {
     this.$el = $(el)
     this.model = new Anaquote()
+    this.$el.change(() => { this.renderSubviews() })
   }
   render() {
     this.buildSubviews()
     this.$el.empty().append(this.subviews.map(v => v.render().$el))
-    this.$el.children().change(evt => {
-      // TODO: render when the model changes, not here
-      this.renderSubviews()
-    })
     return this
   }
   buildSubviews() {

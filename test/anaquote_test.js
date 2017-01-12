@@ -218,9 +218,11 @@ test('constructor', () => {
 
   assert.is('input[name=trigrams]', view.$trigrams)
   assert.hasAttr('placeholder', 'Trigrams', view.$trigrams)
+  assert.hasAttr('size', '100', view.$trigrams)
 
   assert.is('input[name=enumeration]', view.$enumeration)
   assert.hasAttr('placeholder', 'Enumeration', view.$enumeration)
+  assert.hasAttr('size', '100', view.$enumeration)
 
   assert.is('button', view.$start)
   assert.hasText('Start', view.$start)

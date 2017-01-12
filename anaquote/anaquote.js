@@ -114,8 +114,8 @@ class AnaquoteView {
 
 class InputView {
   constructor () {
-    this.$el = $('<div>').append('<input name=trigrams placeholder=Trigrams>',
-                                 '<input name=enumeration placeholder=Enumeration>',
+    this.$el = $('<div>').append('<input name=trigrams placeholder=Trigrams size=100>',
+                                 '<input name=enumeration placeholder=Enumeration size=100>',
                                  '<button>Start</button>')
     this.$el.children().wrap('<div>') // to stack them vertically
   }

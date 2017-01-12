@@ -134,8 +134,8 @@ suite('TrigramsView')
 
 test('constructor', () => {
   let model = new Anaquote('HEL LOW ORL D', '5 5!')
-  let view = new TrigramsView('<div>', model)
-  assert.is('div', view.$el)
+  let view = new TrigramsView(model)
+  assert.is('p', view.$el)
   assert.same(model, view.model)
   assert.equal(4, view.subviews.length)
 
@@ -148,13 +148,8 @@ test('constructor', () => {
   assert.equal(subview.$el[0], view.$el.children()[0])
 })
 
-test('constructor empties $el first', () => {
-  let view = new TrigramsView('<div><div>', new Anaquote('HEL LOW ORL D', '5 5!'))
-  assert.equal(4, view.$el.children().length)
-})
-
 test('render', () => {
-  let view = new TrigramsView('<div>', new Anaquote('HEL LOW ORL D', '5 5!'))
+  let view = new TrigramsView(new Anaquote('HEL LOW ORL D', '5 5!'))
   let subview0 = view.subviews[0]
   let subview1 = view.subviews[1]
   view.model.select(0, 'LOW')
@@ -187,14 +182,13 @@ test('constructor', () => {
   assert.is('div', view.$el)
   assert.same(model, view.model)
 
-  assert.instanceOf(TrigramsView, view.trigrams)
-  assert.is('p', view.trigrams.$el)
-  assert.same(model, view.trigrams.model)
-  assert.has(view.trigrams.$el[0], view.$el)
-
   assert.instanceOf(QuotationView, view.quotation)
   assert.same(model, view.quotation.model)
-  assert.has(view.quotation.$el[0], view.$el)
+  assert.same(view.quotation.$el[0], view.$el.children()[0])
+
+  assert.instanceOf(TrigramsView, view.trigrams)
+  assert.same(model, view.trigrams.model)
+  assert.same(view.trigrams.$el[0], view.$el.children()[1])
 })
 
 test('render', () => {

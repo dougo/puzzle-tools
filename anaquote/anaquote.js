@@ -73,11 +73,10 @@ class TrigramSelectionView {
 }
 
 class TrigramsView {
-  constructor (el, model) {
-    this.$el = $(el)
+  constructor (model) {
     this.model = model
-    this.subviews = this.model.selections.map((t,i) => new TrigramSelectionView(this.model, i))
-    this.$el.empty().append(this.subviews.map(v => v.$el))
+    this.subviews = model.selections.map((t,i) => new TrigramSelectionView(model, i))
+    this.$el = $('<p>').append(this.subviews.map(v => v.$el))
   }
   render() {
     this.subviews.forEach(v => v.render())
@@ -100,10 +99,10 @@ class AnaquoteView {
   constructor (el, model) {
     this.$el = $(el)
     this.model = model
-    this.trigrams = new TrigramsView('<p>', model)
-    this.$el.append(this.trigrams.$el)
     this.quotation = new QuotationView(model)
     this.$el.append(this.quotation.$el)
+    this.trigrams = new TrigramsView(model)
+    this.$el.append(this.trigrams.$el)
     this.$el.change(() => this.render())
   }
   render() {

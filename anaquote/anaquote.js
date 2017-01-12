@@ -1,22 +1,20 @@
 class Anaquote {
-  set trigrams (trigrams) {
-    this._trigrams = trigrams
-    this.selections = trigrams.map(t => '???')
+  constructor (trigrams, enumeration = '') {
+    this.trigrams = trigrams.split(' ')
+    this.selections = this.trigrams.map(t => '???')
+    this.enumeration = enumeration
+    this.blanks = this.constructor.makeBlanks(this.enumeration)
   }
   options(i) {
     let otherSelections = new Set(this.selections)
     otherSelections.delete(this.selection(i))
-    return ['???', ...this._trigrams.filter(t => !otherSelections.has(t))]
+    return ['???', ...this.trigrams.filter(t => !otherSelections.has(t))]
   }
   selection(i) {
     return this.selections[i]
   }
   select(i, trigram) {
     this.selections[i] = trigram
-  }
-  set enumeration (enumeration) {
-    this._enumeration = enumeration
-    this.blanks = this.constructor.makeBlanks(enumeration)
   }
   static makeBlanks(enumeration) {
     // TODO: there's gotta be a better way to do this...
@@ -72,9 +70,9 @@ class TrigramSelectionView {
 }
 
 class AnaquoteView {
-  constructor (el) {
+  constructor (el, model) {
     this.$el = $(el)
-    this.model = new Anaquote()
+    this.model = model
     this.$el.change(() => { this.renderSubviews() })
   }
   render() {

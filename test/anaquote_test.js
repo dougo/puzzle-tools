@@ -126,43 +126,35 @@ test('selecting an option updates the model', () => {
 suite('AnaquoteView')
 
 test('constructor', () => {
-  let model = new Anaquote('')
+  let model = new Anaquote('HEL LOW ORL D', '5 5!')
   let view = new AnaquoteView('<div>', model)
   assert.is('div', view.$el)
   assert.same(model, view.model)
-})
-
-test('buildSubviews', () => {
-  let view = new AnaquoteView('<div>', new Anaquote('HEL LOW ORL D'))
-  view.buildSubviews()
   assert.equal(4, view.subviews.length)
+
   let subview = view.subviews[0]
   assert.instanceOf(TrigramSelectionView, subview)
   assert.same(view.model, subview.model)
   assert.equal(0, subview.i)
-})
 
-test('render', () => {
-  let view = new AnaquoteView('<div>', new Anaquote('HEL LOW ORL D', '5 5!'))
-  assert.same(view, view.render())
-  assert.equal(4, view.subviews.length)
   assert.equal(4, view.$el.children().length)
   let $select = view.$el.children().first()
   assert.is('select', $select)
-  assert.equal(5, $select.prop('options').length)
+  assert.empty($select.prop('options'))
 })
 
-test('render empties $el first', () => {
-  let view = new AnaquoteView('<div><div>', new Anaquote('HEL LOW ORL D', '5 5!')).render()
+test('constructor empties $el first', () => {
+  let view = new AnaquoteView('<div><div>', new Anaquote('HEL LOW ORL D', '5 5!'))
   assert.equal(4, view.$el.children().length)
 })
 
-test('renderSubviews', () => {
-  let view = new AnaquoteView('<div>', new Anaquote('HEL LOW ORL D', '5 5!')).render()
+test('render', () => {
+  let view = new AnaquoteView('<div><div>', new Anaquote('HEL LOW ORL D', '5 5!'))
   let subview0 = view.subviews[0]
   let subview1 = view.subviews[1]
   view.model.select(0, 'LOW')
-  view.renderSubviews()
+  assert.same(view, view.render())
+  assert.equal(5, subview0.$el.prop('options').length)
   assert.equal('LOW', subview0.$el.val())
   assert.equal(['???', 'HEL', 'ORL', 'D'], Array.from(subview1.$el.prop('options')).map(o => o.value))
 })
@@ -170,9 +162,6 @@ test('renderSubviews', () => {
 test('selecting an option re-renders subviews', () => {
   let view = new AnaquoteView('<div>', new Anaquote('HEL LOW ORL D', '5 5!')).render()
   let subview = view.subviews[0]
-  let $el = subview.$el
-  $el.val('LOW').change()
-  assert.equal(subview, view.subviews[0])
-  assert.equal($el, view.subviews[0].$el)
+  subview.$el.val('LOW').change()
   assert.equal('LOW', subview.$el.val())
 })

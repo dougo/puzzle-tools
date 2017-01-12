@@ -73,17 +73,12 @@ class AnaquoteView {
   constructor (el, model) {
     this.$el = $(el)
     this.model = model
-    this.$el.change(() => { this.renderSubviews() })
+    this.subviews = this.model.selections.map((t,i) => new TrigramSelectionView(this.model, i))
+    this.$el.empty().append(this.subviews.map(v => v.$el))
+    this.$el.change(() => this.render())
   }
   render() {
-    this.buildSubviews()
-    this.$el.empty().append(this.subviews.map(v => v.render().$el))
-    return this
-  }
-  buildSubviews() {
-    this.subviews = this.model.selections.map((t,i) => new TrigramSelectionView(this.model, i))
-  }
-  renderSubviews() {
     this.subviews.forEach(v => v.render())
+    return this
   }
 }

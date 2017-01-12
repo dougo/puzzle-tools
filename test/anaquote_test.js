@@ -30,23 +30,20 @@ test('selection and select', () => {
   assert.equal('D', model.selection(3))
 })
 
-test('selecting non-blank option removes it from other options', () => {
+test('omit selected trigrams from other options', () => {
   let model = new Anaquote('HEL LOW ORL D')
   model.select(0, 'LOW')
   assert.includes(model.options(0), 'LOW')
   refute.includes(model.options(3), 'LOW')
+})
 
-  model.select(0, 'ORL')
-  // Put LOW back into other selects.
-  assert.includes(model.options(3),  'LOW')
-
-  model.select(0, '???')
-  // Don't remove blank from other selects.
-  assert.includes(model.options(3),  '???')
-
-  model.select(0, 'HEL')
-  // Don't put blank back into other selects again!
-  assert.equal(1, model.options(3).filter(v => v === '???').length)
+test('allow duplicate selections if duplicate trigrams', () => {
+  let model = new Anaquote('TSE TSE FLY')
+  assert.equal(['???', 'TSE', 'TSE', 'FLY'], model.options(2))
+  model.select(0, 'TSE')
+  assert.equal(['???', 'TSE', 'FLY'], model.options(2))
+  model.select(1, 'TSE')
+  assert.equal(['???', 'FLY'], model.options(2))
 })
 
 test('makeBlanks', () => {

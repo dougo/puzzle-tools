@@ -6,9 +6,21 @@ class Anaquote {
     this.blanks = this.constructor.makeBlanks(this.enumeration)
   }
   options(i) {
-    let otherSelections = new Set(this.selections)
-    otherSelections.delete(this.selection(i))
-    return ['???', ...this.trigrams.filter(t => !otherSelections.has(t))]
+    function dup(array) { return array.map(x => x) }
+    function del(array, elt) { // 'delete' is a keyword...
+      let i = array.indexOf(elt)
+      if (i >= 0) array.splice(i, 1)
+      return array
+    }
+    function remove(array, elt) { return del(dup(array), elt) }
+    function subtract(array1, array2) {
+      let copy = dup(array1)
+      array2.forEach(x => del(copy, x))
+      return copy
+    }
+    let otherSelections = remove(this.selections, this.selection(i))
+    let unselectedTrigrams = subtract(this.trigrams, otherSelections)
+    return ['???', ...unselectedTrigrams]
   }
   selection(i) {
     return this.selections[i]

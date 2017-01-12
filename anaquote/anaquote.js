@@ -96,8 +96,8 @@ class QuotationView {
 }
 
 class AnaquoteView {
-  constructor (el, model) {
-    this.$el = $(el)
+  constructor (model) {
+    this.$el = $('<div>')
     this.model = model
     this.quotation = new QuotationView(model)
     this.$el.append(this.quotation.$el)
@@ -109,5 +109,33 @@ class AnaquoteView {
     this.trigrams.render()
     this.quotation.render()
     return this
+  }
+}
+
+class InputView {
+  constructor () {
+    this.$el = $('<div>').append('<input name=trigrams placeholder=Trigrams>',
+                                 '<input name=enumeration placeholder=Enumeration>',
+                                 '<button>Start</button>')
+    this.$el.children().wrap('<div>') // to stack them vertically
+  }
+  get $trigrams ()    { return this.$el.find('input[name=trigrams]')    }
+  get $enumeration () { return this.$el.find('input[name=enumeration]') }
+  get $start ()       { return this.$el.find('button')                  }
+  newAnaquote() { return new Anaquote(this.$trigrams.val(), this.$enumeration.val()) }
+}
+
+class ApplicationView {
+  constructor ($el) {
+    this.$el = $el
+    this.input = new InputView()
+    this.$el.append(this.input.$el)
+    this.input.$start.click(() => {
+      if (this.anaquote) this.anaquote.$el.remove()
+      this.anaquote = new AnaquoteView(this.input.newAnaquote()).render()
+      this.$el.append(this.anaquote.$el)
+      this.input.$trigrams.val('')
+      this.input.$enumeration.val('')
+    })
   }
 }

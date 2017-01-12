@@ -8,12 +8,7 @@
     <link rel=stylesheet href=anaquote.css>
     <script src="../vendor/jquery-3.1.1.min.js"></script>
     <script src=anaquote.js></script>
-    <script>
-      $(() => {
-      let model = new Anaquote('HEL LOW ORL D', '5, 5!')
-      new AnaquoteView('#anaquote', model).render()
-      })
-    </script>
+    <script>$(() => { new ApplicationView($('#anaquote')) })</script>
   </head>
   <body>
     <h1>Anaquote</h1>

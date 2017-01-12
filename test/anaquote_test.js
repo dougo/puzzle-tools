@@ -178,7 +178,7 @@ suite('AnaquoteView')
 
 test('constructor', () => {
   let model = new Anaquote('HEL LOW ORL D', '5 5!')
-  let view = new AnaquoteView('<div>', model)
+  let view = new AnaquoteView(model)
   assert.is('div', view.$el)
   assert.same(model, view.model)
 
@@ -192,15 +192,84 @@ test('constructor', () => {
 })
 
 test('render', () => {
-  let view = new AnaquoteView('<div>', new Anaquote('HEL LOW ORL D', '5 5!'))
+  let view = new AnaquoteView(new Anaquote('HEL LOW ORL D', '5 5!'))
   assert.same(view, view.render())
   assert.equal(5, view.trigrams.subviews[0].$options.length)
   assert.hasText('????? ?????!', view.quotation.$el)
 })
 
 test('selecting an option re-renders', () => {
-  let view = new AnaquoteView('<div>', new Anaquote('HEL LOW ORL D', '5 5!')).render()
+  let view = new AnaquoteView(new Anaquote('HEL LOW ORL D', '5 5!')).render()
   view.trigrams.subviews[1].$el.val('LOW').change()
   refute.includes(view.trigrams.subviews[0].$options.map(o => o.value), 'LOW')
   assert.hasText('???LO W????!', view.quotation.$el)
+})
+
+suite('InputView')
+
+test('constructor', () => {
+  let view = new InputView()
+  assert.is('div', view.$el)
+  let $children = view.$el.children('div')
+  assert.equal(3, $children.length)
+  assert.has(view.$trigrams, $children.eq(0))
+  assert.has(view.$enumeration, $children.eq(1))
+  assert.has(view.$start, $children.eq(2))
+
+  assert.is('input[name=trigrams]', view.$trigrams)
+  assert.hasAttr('placeholder', 'Trigrams', view.$trigrams)
+
+  assert.is('input[name=enumeration]', view.$enumeration)
+  assert.hasAttr('placeholder', 'Enumeration', view.$enumeration)
+
+  assert.is('button', view.$start)
+  assert.hasText('Start', view.$start)
+})
+
+test('newAnaquote', () => {
+  let view = new InputView()
+  view.$trigrams.val('HEL LOW ORL D')
+  view.$enumeration.val('5 5!')
+  let anaquote = view.newAnaquote()
+  assert.instanceOf(Anaquote, anaquote)
+  assert.equal(['HEL', 'LOW', 'ORL', 'D'], anaquote.trigrams)
+  assert.equal('5 5!', anaquote.enumeration)
+})
+
+suite('ApplicationView')
+
+test('constructor', () => {
+  let $el = $('<div>')
+  let view = new ApplicationView($el)
+  assert.same($el, view.$el)
+
+  assert.instanceOf(InputView, view.input)
+  assert.same(view.input.$el[0], view.$el.children()[0])
+})
+
+test('clicking Start makes a new AnaquoteView', () => {
+  let view = new ApplicationView($('<div>'))
+  view.input.$trigrams.val('HEL LOW ORL D')
+  view.input.$enumeration.val('5 5!')
+  view.input.$start.click()
+  assert.instanceOf(AnaquoteView, view.anaquote)
+  assert.equal(['HEL', 'LOW', 'ORL', 'D'], view.anaquote.model.trigrams)
+  assert.equal('5 5!', view.anaquote.model.enumeration)
+  assert.same(view.anaquote.$el[0], view.$el.children().last()[0])
+  assert.hasText('????? ?????!', view.anaquote.quotation.$el)
+  assert.hasValue('', view.input.$trigrams)
+  assert.hasValue('', view.input.$enumeration)
+})
+
+test('clicking Start removes the old AnaquoteView first', () => {
+  let view = new ApplicationView($('<div>'))
+  view.input.$trigrams.val('HEL LOW ORL D')
+  view.input.$enumeration.val('5 5!')
+  view.input.$start.click()
+  assert.equal(2, view.$el.children().length)
+
+  view.input.$trigrams.val('GOO DBY E')
+  view.input.$enumeration.val('4 3!')
+  view.input.$start.click()
+  assert.equal(2, view.$el.children().length)
 })

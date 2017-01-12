@@ -59,6 +59,9 @@ class TrigramSelectionView {
     this.$el = $('<select>').addClass('mono')
     this.$el.change(() => { this.model.select(this.i, this.$el.val()) })
   }
+  get $options () {
+    return Array.from(this.$el.prop('options'))
+  }
   render() {
     let opts = this.model.formattedOptions(this.i).map(([v,t]) => {
       t = t.replace(/ /g, '&nbsp;')
@@ -69,16 +72,43 @@ class TrigramSelectionView {
   }
 }
 
-class AnaquoteView {
+class TrigramsView {
   constructor (el, model) {
     this.$el = $(el)
     this.model = model
     this.subviews = this.model.selections.map((t,i) => new TrigramSelectionView(this.model, i))
     this.$el.empty().append(this.subviews.map(v => v.$el))
-    this.$el.change(() => this.render())
   }
   render() {
     this.subviews.forEach(v => v.render())
+    return this
+  }
+}
+
+class QuotationView {
+  constructor (model) {
+    this.model = model
+    this.$el = $('<p>')
+  }
+  render() {
+    this.$el.text(this.model.quotation())
+    return this
+  }
+}
+
+class AnaquoteView {
+  constructor (el, model) {
+    this.$el = $(el)
+    this.model = model
+    this.trigrams = new TrigramsView('<p>', model)
+    this.$el.append(this.trigrams.$el)
+    this.quotation = new QuotationView(model)
+    this.$el.append(this.quotation.$el)
+    this.$el.change(() => this.render())
+  }
+  render() {
+    this.trigrams.render()
+    this.quotation.render()
     return this
   }
 }

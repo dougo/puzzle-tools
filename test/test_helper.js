@@ -31,4 +31,16 @@ assert.hasClass = (className, $obj, msg) => {
          utils.message(msg, `Expected ${$obj.prop('outerHTML')} to have class '${className}'`))
 }
 
+assert.hasText = (text, $obj, msg) => {
+  assert(text === $obj.text(),
+         utils.message(msg, `Expected ${$obj.prop('outerHTML')} to have text '${text}'`))
+}
+
+assert.hasValue = (value, $obj, msg) => {
+  let actual = $obj.val()
+  assert(value === actual,
+         utils.message(msg, `Expected ${$obj.prop('outerHTML')} to have value '${value}',`
+                       + ` but the value was '${actual}'`))
+}
+
 module.exports = { load, assert, refute, $ }

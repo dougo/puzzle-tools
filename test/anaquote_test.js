@@ -96,23 +96,30 @@ test('constructor', () => {
   assert.empty(view.$el.children())
 })
 
+test('$options', () => {
+  let view = new TrigramSelectionView()
+  assert.empty(view.$options)
+  view.$el.append('<option>foo</option>', '<option>bar</option>')
+  assert.equal(['foo', 'bar'], view.$options.map(o => o.value))
+})
+
 test('render', () => {
   let view = new TrigramSelectionView(new Anaquote('HEL LOW ORL D', '5  5!'), 1)
   assert.equal(view, view.render())
   let $el = view.$el
-  let opts = Array.from($el.prop('options'))
+  let opts = view.$options
   assert.equal(['???', 'HEL', 'LOW', 'ORL', 'D'], opts.map(o => o.value))
   assert.equal('??&nbsp;&nbsp;?', opts[0].text)
-  assert.equal('???', $el.val())
+  assert.hasValue('???', $el)
 
   view.model.select(1, 'HEL')
   view.render()
-  assert.equal(['???', 'HEL', 'LOW', 'ORL', 'D'], Array.from($el.prop('options')).map(o => o.value))
-  assert.equal('HEL', $el.val())
+  assert.equal(['???', 'HEL', 'LOW', 'ORL', 'D'], view.$options.map(o => o.value))
+  assert.hasValue('HEL', $el)
 
   view.model.select(2, 'LOW')
   view.render()
-  assert.equal(['???', 'HEL', 'ORL', 'D'], Array.from($el.prop('options')).map(o => o.value))
+  assert.equal(['???', 'HEL', 'ORL', 'D'], view.$options.map(o => o.value))
 })
 
 test('selecting an option updates the model', () => {
@@ -123,11 +130,11 @@ test('selecting an option updates the model', () => {
 })
 
 
-suite('AnaquoteView')
+suite('TrigramsView')
 
 test('constructor', () => {
   let model = new Anaquote('HEL LOW ORL D', '5 5!')
-  let view = new AnaquoteView('<div>', model)
+  let view = new TrigramsView('<div>', model)
   assert.is('div', view.$el)
   assert.same(model, view.model)
   assert.equal(4, view.subviews.length)
@@ -138,30 +145,68 @@ test('constructor', () => {
   assert.equal(0, subview.i)
 
   assert.equal(4, view.$el.children().length)
-  let $select = view.$el.children().first()
-  assert.is('select', $select)
-  assert.empty($select.prop('options'))
+  assert.equal(subview.$el[0], view.$el.children()[0])
 })
 
 test('constructor empties $el first', () => {
-  let view = new AnaquoteView('<div><div>', new Anaquote('HEL LOW ORL D', '5 5!'))
+  let view = new TrigramsView('<div><div>', new Anaquote('HEL LOW ORL D', '5 5!'))
   assert.equal(4, view.$el.children().length)
 })
 
 test('render', () => {
-  let view = new AnaquoteView('<div><div>', new Anaquote('HEL LOW ORL D', '5 5!'))
+  let view = new TrigramsView('<div>', new Anaquote('HEL LOW ORL D', '5 5!'))
   let subview0 = view.subviews[0]
   let subview1 = view.subviews[1]
   view.model.select(0, 'LOW')
   assert.same(view, view.render())
-  assert.equal(5, subview0.$el.prop('options').length)
-  assert.equal('LOW', subview0.$el.val())
-  assert.equal(['???', 'HEL', 'ORL', 'D'], Array.from(subview1.$el.prop('options')).map(o => o.value))
+  assert.equal(5, subview0.$options.length)
+  assert.hasValue('LOW', subview0.$el)
+  assert.equal(['???', 'HEL', 'ORL', 'D'], subview1.$options.map(o => o.value))
 })
 
-test('selecting an option re-renders subviews', () => {
+suite('QuotationView')
+
+test('constructor', () => {
+  let model = new Anaquote('HEL LOW ORL D', '5 5!')
+  let view = new QuotationView(model)
+  assert.same(model, view.model)
+  assert.is('p', view.$el)
+})
+
+test('render', () => {
+  let view = new QuotationView(new Anaquote('HEL LOW ORL D', '5 5!'))
+  assert.same(view, view.render())
+  assert.hasText('????? ?????!', view.$el)
+})
+
+suite('AnaquoteView')
+
+test('constructor', () => {
+  let model = new Anaquote('HEL LOW ORL D', '5 5!')
+  let view = new AnaquoteView('<div>', model)
+  assert.is('div', view.$el)
+  assert.same(model, view.model)
+
+  assert.instanceOf(TrigramsView, view.trigrams)
+  assert.is('p', view.trigrams.$el)
+  assert.same(model, view.trigrams.model)
+  assert.has(view.trigrams.$el[0], view.$el)
+
+  assert.instanceOf(QuotationView, view.quotation)
+  assert.same(model, view.quotation.model)
+  assert.has(view.quotation.$el[0], view.$el)
+})
+
+test('render', () => {
+  let view = new AnaquoteView('<div>', new Anaquote('HEL LOW ORL D', '5 5!'))
+  assert.same(view, view.render())
+  assert.equal(5, view.trigrams.subviews[0].$options.length)
+  assert.hasText('????? ?????!', view.quotation.$el)
+})
+
+test('selecting an option re-renders', () => {
   let view = new AnaquoteView('<div>', new Anaquote('HEL LOW ORL D', '5 5!')).render()
-  let subview = view.subviews[0]
-  subview.$el.val('LOW').change()
-  assert.equal('LOW', subview.$el.val())
+  view.trigrams.subviews[1].$el.val('LOW').change()
+  refute.includes(view.trigrams.subviews[0].$options.map(o => o.value), 'LOW')
+  assert.hasText('???LO W????!', view.quotation.$el)
 })

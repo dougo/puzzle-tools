@@ -1,4 +1,4 @@
-const { load, assert, refute, $, sinon } = require('./test_helper')
+const { load, assert, refute, jsdom, sinon } = require('./test_helper')
 
 load('anaquote/anaquote.js')
 
@@ -253,6 +253,7 @@ test('selecting an option re-renders', () => {
 suite('InputView')
 
 test('constructor', () => {
+  jsdom.changeURL(window, 'http://example.com/?trigrams=HEL+LOW+ORL+D&enumeration=5+5!')
   let view = new InputView()
   assert.is('div', view.$el)
   let $children = view.$el.children('div')
@@ -264,10 +265,12 @@ test('constructor', () => {
   assert.is('input[name=trigrams]', view.$trigrams)
   assert.hasAttr('placeholder', 'Trigrams', view.$trigrams)
   assert.hasAttr('size', '100', view.$trigrams)
+  assert.hasValue('HEL LOW ORL D', view.$trigrams)
 
   assert.is('input[name=enumeration]', view.$enumeration)
   assert.hasAttr('placeholder', 'Enumeration', view.$enumeration)
   assert.hasAttr('size', '100', view.$enumeration)
+  assert.hasValue('5 5!', view.$enumeration)
 
   assert.is('button', view.$start)
   assert.hasText('Start', view.$start)
@@ -305,8 +308,6 @@ test('clicking Start makes a new rendered AnaquoteView', () => {
   assert.equal('5 5!', view.anaquote.model.enumeration)
   assert.same(view.anaquote.$el[0], view.$el.children().last()[0])
   assert.hasText('????? ?????!', view.anaquote.quotation.$el)
-  assert.hasValue('', view.input.$trigrams)
-  assert.hasValue('', view.input.$enumeration)
 })
 
 test('clicking Start removes the old AnaquoteView first', () => {

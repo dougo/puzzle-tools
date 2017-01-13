@@ -1,7 +1,11 @@
 const fs = require('fs')
 const vm = require('vm')
-$ = require('jquery')
+const jsdom = require('jsdom')
 const sinon = require('sinon')
+
+// Put these into the global namespace so that the file under test can use them.
+URL = require('url').URL
+$ = require('jquery')
 
 function load(filename) {
   vm.runInThisContext(fs.readFileSync(__dirname + '/../' + filename))
@@ -51,4 +55,4 @@ assert.hasAttr = (name, value, $obj, msg) => {
                        + ` with the value '${value}', but the value was '${actual}'`))
 }
 
-module.exports = { load, assert, refute, $, sinon }
+module.exports = { load, assert, refute, jsdom, sinon }

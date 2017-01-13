@@ -1,6 +1,7 @@
 const fs = require('fs')
 const vm = require('vm')
-$ = require('jquery')
+const $ = require('jquery')
+const sinon = require('sinon')
 
 function load(filename) {
   vm.runInThisContext(fs.readFileSync(__dirname + '/../' + filename))
@@ -50,4 +51,4 @@ assert.hasAttr = (name, value, $obj, msg) => {
                        + ` with the value '${value}', but the value was '${actual}'`))
 }
 
-module.exports = { load, assert, refute, $ }
+module.exports = { load, assert, refute, $, sinon }

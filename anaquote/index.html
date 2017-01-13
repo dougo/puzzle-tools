@@ -8,7 +8,7 @@
     <link rel=stylesheet href=anaquote.css>
     <script src="../vendor/jquery-3.1.1.min.js"></script>
     <script src=anaquote.js></script>
-    <script>$(() => { new ApplicationView($('#anaquote')) })</script>
+    <script>$(() => { window.app = new ApplicationView($('#anaquote')); app.fetchWords() })</script>
   </head>
   <body>
     <h1>Anaquote</h1>

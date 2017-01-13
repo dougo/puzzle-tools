@@ -149,5 +149,15 @@ class ApplicationView {
       this.input.$trigrams.val('')
       this.input.$enumeration.val('')
     })
+    this.words = new Set()
+  }
+  fetchWords() {
+    $.get('../vendor/NPLCombinedWordList.txt', 'text/plain').done(data => {
+      this.words = new Set(data.split(/\r?\n/))
+      console.log('Fetched wordlist.')
+    }).fail(data => {
+      console.log('Failed to fetch wordlist:')
+      console.log(data.statusText)
+    })
   }
 }

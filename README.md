@@ -9,7 +9,7 @@ phrase, for rapid perusal. With some extra features.
  * `Reverse`: Show a string and its reverse -- for when you
    don't know which way the encoded text is facing
 
- * `Double`: Write two copies of a string in a row -- for when you don't know where the encded text begins
+ * `Double`: Write two copies of a string in a row -- for when you don't know where the encoded text begins
 
  * `Highlight`: Highlight the outputs that look most like English
 

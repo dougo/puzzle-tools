@@ -1,4 +1,4 @@
-const { load, assert, refute, $ } = require('./test_helper')
+const { load, assert, refute, $, sinon } = require('./test_helper')
 
 load('anaquote/anaquote.js')
 
@@ -241,9 +241,10 @@ test('constructor', () => {
   let $el = $('<div>')
   let view = new ApplicationView($el)
   assert.same($el, view.$el)
-
   assert.instanceOf(InputView, view.input)
   assert.same(view.input.$el[0], view.$el.children()[0])
+  assert.instanceOf(Set, view.words)
+  assert.equal(0, view.words.size)
 })
 
 test('clicking Start makes a new AnaquoteView', () => {
@@ -272,3 +273,18 @@ test('clicking Start removes the old AnaquoteView first', () => {
   view.input.$start.click()
   assert.equal(2, view.$el.children().length)
 })
+
+/* Can't get this to work :(
+test('fetchWords', () => {
+  let server = sinon.fakeServer.create()
+
+  let app = new ApplicationView($('<div>'))
+  app.fetchWords()
+  console.log(server)
+
+  server.respond()
+  refute.empty(server.requests)
+  
+  server.restore()
+})
+*/

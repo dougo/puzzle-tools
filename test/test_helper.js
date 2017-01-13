@@ -1,6 +1,6 @@
 const fs = require('fs')
 const vm = require('vm')
-const $ = require('jquery')
+$ = require('jquery')
 const sinon = require('sinon')
 
 function load(filename) {

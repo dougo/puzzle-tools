@@ -6,15 +6,14 @@ class Anaquote {
     this.blanks = this.constructor.makeBlanks(this.enumeration)
   }
   options(i) {
-    function dup(array) { return array.map(x => x) }
     function del(array, elt) { // 'delete' is a keyword...
       let i = array.indexOf(elt)
       if (i >= 0) array.splice(i, 1)
       return array
     }
-    function remove(array, elt) { return del(dup(array), elt) }
+    function remove(array, elt) { return del(array.slice(), elt) }
     function subtract(array1, array2) {
-      let copy = dup(array1)
+      let copy = array1.slice()
       array2.forEach(x => del(copy, x))
       return copy
     }
@@ -64,15 +63,33 @@ class Anaquote {
   }
 }
 
-class TrigramSelectionView {
+class SelectionView {
   constructor (model, i) {
     this.model = model
     this.i = i
     this.$el = $('<select>').addClass('mono')
-    this.$el.change(() => { this.model.select(this.i, this.$el.val()) })
   }
   get $options () {
     return Array.from(this.$el.prop('options'))
+  }
+}
+
+class SelectionsView {
+  constructor (model) {
+    this.model = model
+    this.subviews = this.selections().map((s,i) => new this.subviewClass(model, i))
+    this.$el = $('<p>').append(this.subviews.map(v => v.$el))
+  }
+  render() {
+    this.subviews.forEach(v => v.render())    
+    return this
+  }
+}
+
+class TrigramSelectionView extends SelectionView {
+  constructor (model, i) {
+    super(model, i)
+    this.$el.change(() => { this.model.select(this.i, this.$el.val()) })
   }
   render() {
     let opts = this.model.formattedOptions(this.i).map(([v,t]) => {
@@ -84,16 +101,21 @@ class TrigramSelectionView {
   }
 }
 
-class TrigramsView {
-  constructor (model) {
-    this.model = model
-    this.subviews = model.selections.map((t,i) => new TrigramSelectionView(model, i))
-    this.$el = $('<p>').append(this.subviews.map(v => v.$el))
-  }
+class TrigramsView extends SelectionsView {
+  get subviewClass () { return TrigramSelectionView }
+  selections() { return this.model.selections }
+}
+
+class WordSelectionView extends SelectionView {
   render() {
-    this.subviews.forEach(v => v.render())
+    this.$el.append('<option>?????</option>').val('?????')
     return this
   }
+}
+
+class WordsView extends SelectionsView {
+  get subviewClass () { return WordSelectionView }
+  selections() { return [1, 2] }
 }
 
 class QuotationView {
@@ -115,10 +137,13 @@ class AnaquoteView {
     this.$el.append(this.quotation.$el)
     this.trigrams = new TrigramsView(model)
     this.$el.append(this.trigrams.$el)
+    this.words = new WordsView(model)
+    this.$el.append(this.words.$el)
     this.$el.change(() => this.render())
   }
   render() {
     this.trigrams.render()
+    this.words.render()
     this.quotation.render()
     return this
   }

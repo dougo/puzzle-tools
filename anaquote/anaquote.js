@@ -144,13 +144,13 @@ class AnaquoteView {
     this.$el.append(this.quotation.$el)
     this.trigrams = new TrigramsView(model)
     this.$el.append(this.trigrams.$el)
-    this.words = new WordsView(model)
-    this.$el.append(this.words.$el)
+    // this.words = new WordsView(model)
+    // this.$el.append(this.words.$el)
     this.$el.change(() => this.render())
   }
   render() {
     this.trigrams.render()
-    this.words.render()
+    // this.words.render()
     this.quotation.render()
     return this
   }

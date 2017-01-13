@@ -2,8 +2,10 @@ class Anaquote {
   constructor (trigrams, enumeration = '') {
     this.trigrams = trigrams.split(' ')
     this.selections = this.trigrams.map(t => '???')
-    this.enumeration = enumeration
+    this.enumeration = this.constructor.parseEnumeration(enumeration)
+    this.words = this.enumeration.filter(t => typeof t === 'number').map(n => '?'.repeat(n))
     this.blanks = this.constructor.makeBlanks(this.enumeration)
+    this.wordBlanks = this.constructor.makeWordBlanks(this.enumeration)
   }
   options(i) {
     function del(array, elt) { // 'delete' is a keyword...
@@ -27,39 +29,44 @@ class Anaquote {
   select(i, trigram) {
     this.selections[i] = trigram
   }
-  static makeBlanks(enumeration) {
-    // TODO: there's gotta be a better way to do this...
-    let blanks = []
-    let blank = ''
-    let i = 0
-    enumeration.split(/(\d+)/).forEach(token => {
+  static parseEnumeration(enumeration) {
+    return enumeration.split(/(\d+)/).map(token => {
       let len = Number.parseInt(token)
-      if (isNaN(len)) {
-        blank += token
-      } else {
-        for (let j = 0; j < len; j++) {
-          if (i === 3) {
-            blanks.push(blank)
-            blank = ''
-            i = 0
-          }
-          blank += '?'
-          i++
-        }
-      }
-    })
-    if (blank.length > 0) blanks.push(blank)
-    return blanks
+      return isNaN(len) ? token : len
+    }).filter(s => s !== '')
   }
-  fillInBlank(i, trigram) {
-    let letters = (trigram + '???').split('')
-    return this.blanks[i].split('').map(blank => blank === '?' ? letters.shift() : blank).join('')
+  static makeBlankString(parsedEnumeration) {
+    return parsedEnumeration.map(token => {
+      return typeof token === 'string' ? token : '_'.repeat(token)
+    }).join('')
+  }
+  static makeBlanks(parsedEnumeration) {
+    return this.makeBlankString(parsedEnumeration).match(/[^_]*_[^_]*_?[^_]*_?[^_]*/g)
+  }
+  static makeWordBlanks(parsedEnumeration) {
+    return this.makeBlankString(parsedEnumeration).match(/[^_]*_+[^_]*/g)
+  }
+  static fillInBlank(blank, fill) {
+    let letters = (fill + '???').split('')
+    return blank.split('').map(b => b === '_' ? letters.shift() : b).join('')
+  }
+  static formatOptions(options, blank) {
+    return options.map(o => [o, this.fillInBlank(blank, o)])
   }
   formattedOptions(i) {
-    return this.options(i).map(o => [o, this.fillInBlank(i, o)])
+    return this.constructor.formatOptions(this.options(i), this.blanks[i])
   }
   quotation() {
-    return this.selections.map((t, i) => this.fillInBlank(i, t)).join('')
+    return this.selections.map((t, i) => this.constructor.fillInBlank(this.blanks[i], t)).join('')
+  }
+  word(i) {
+    return this.words[i]
+  }
+  wordOptions(i) {
+    return [this.word(i)]
+  }
+  formattedWordOptions(i) {
+    return this.constructor.formatOptions(this.wordOptions(i), this.wordBlanks[i])
   }
 }
 
@@ -71,6 +78,14 @@ class SelectionView {
   }
   get $options () {
     return Array.from(this.$el.prop('options'))
+  }
+  render() {
+    let opts = this.modelOptions(this.i).map(([v,t]) => {
+      t = t.replace(/ /g, '&nbsp;')
+      return `<option value=${v}>${t}</option>`
+    })
+    this.$el.empty().append(opts).val(this.modelValue(this.i))
+    return this
   }
 }
 
@@ -91,14 +106,13 @@ class TrigramSelectionView extends SelectionView {
     super(model, i)
     this.$el.change(() => { this.model.select(this.i, this.$el.val()) })
   }
-  render() {
-    let opts = this.model.formattedOptions(this.i).map(([v,t]) => {
-      t = t.replace(/ /g, '&nbsp;')
-      return `<option value=${v}>${t}</option>`
-    })
-    this.$el.empty().append(opts).val(this.model.selection(this.i))
-    return this
-  }
+  modelOptions(i) { return this.model.formattedOptions(i) }
+  modelValue(i) { return this.model.selection(i) }
+}
+
+class WordSelectionView extends SelectionView {
+  modelOptions(i) { return this.model.formattedWordOptions(i) }
+  modelValue(i) { return this.model.word(i) }
 }
 
 class TrigramsView extends SelectionsView {
@@ -106,16 +120,9 @@ class TrigramsView extends SelectionsView {
   selections() { return this.model.selections }
 }
 
-class WordSelectionView extends SelectionView {
-  render() {
-    this.$el.append('<option>?????</option>').val('?????')
-    return this
-  }
-}
-
 class WordsView extends SelectionsView {
   get subviewClass () { return WordSelectionView }
-  selections() { return [1, 2] }
+  selections() { return this.model.words }
 }
 
 class QuotationView {

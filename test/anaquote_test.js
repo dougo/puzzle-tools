@@ -9,8 +9,10 @@ test('constructor', () => {
   let model = new Anaquote('HEL LOW ORL D', '5 5!')
   assert.equal(['HEL', 'LOW', 'ORL', 'D'], model.trigrams)
   assert.equal(['???', '???', '???', '???'], model.selections)
-  assert.equal('5 5!', model.enumeration)
-  assert.equal(['???', '?? ?', '???', '?!'], model.blanks)
+  assert.equal([5, ' ', 5, '!'], model.enumeration)
+  assert.equal(['?????', '?????'], model.words)
+  assert.equal(['___', '__ _', '___', '_!'], model.blanks)
+  assert.equal(['_____ ', '_____!'], model.wordBlanks)
 })
 
 test('options', () => {
@@ -46,24 +48,43 @@ test('allow duplicate selections if duplicate trigrams', () => {
   assert.equal(['???', 'FLY'], model.options(2))
 })
 
+test('parseEnumeration', () => {
+  assert.equal([3], Anaquote.parseEnumeration('3'))
+  assert.equal([5, ', ', 5, '!'], Anaquote.parseEnumeration('5, 5!'))
+})
+
+test('makeBlankString', () => {
+  assert.equal('___', Anaquote.makeBlankString([3]))
+  assert.equal('_____, _____!', Anaquote.makeBlankString([5, ', ', 5, '!']))
+})
+
 test('makeBlanks', () => {
-  assert.equal(['???'], Anaquote.makeBlanks('3'))
-  assert.equal(['???', '??'], Anaquote.makeBlanks('5'))
-  assert.equal([' ???', '??'], Anaquote.makeBlanks(' 5'))
-  assert.equal(['???', '?? ?', '???', '?!'], Anaquote.makeBlanks('5 5!'))
-  assert.equal(['???,'], Anaquote.makeBlanks('3,'))
+  assert.equal(['___'], Anaquote.makeBlanks([3]))
+  assert.equal(['___', '__'], Anaquote.makeBlanks([5]))
+  assert.equal([' ___', '__'], Anaquote.makeBlanks([' ', 5]))
+  assert.equal(['___', '__ _', '___', '_!'], Anaquote.makeBlanks([5, ' ', 5, '!']))
+  assert.equal(['___,'], Anaquote.makeBlanks([3, ',']))
+})
+
+test('makeWordBlanks', () => {
+  assert.equal(['_____'], Anaquote.makeWordBlanks([5]))
+  assert.equal([' _____'], Anaquote.makeWordBlanks([' ', 5]))
+  assert.equal(['_____ ', '_____!'], Anaquote.makeWordBlanks([5, ' ', 5, '!']))
 })
 
 test('fillInBlank', () => {
-  let model = new Anaquote('', '5 5!')
-  assert.equal('HEL', model.fillInBlank(0, 'HEL'))
-  assert.equal('D??', model.fillInBlank(0, 'D'))
-  assert.equal('LO W', model.fillInBlank(1, 'LOW'))
-  assert.equal('D? ?', model.fillInBlank(1, 'D'))
-  assert.equal('ORL', model.fillInBlank(2, 'ORL'))
-  assert.equal('D!', model.fillInBlank(3, 'D'))
-  assert.equal('H!', model.fillInBlank(3, 'HEL'))
+  assert.equal('HEL', Anaquote.fillInBlank('___', 'HEL'))
+  assert.equal('D??', Anaquote.fillInBlank('___', 'D'))
+  assert.equal('LO W', Anaquote.fillInBlank('__ _', 'LOW'))
+  assert.equal('D? ?', Anaquote.fillInBlank('__ _', 'D'))
+  assert.equal('D!', Anaquote.fillInBlank('_!', 'D'))
+  assert.equal('H!', Anaquote.fillInBlank('_!', 'HEL'))
 })
+
+test('formatOptions', () => {
+  assert.equal([['HEL', 'HE L'], ['D', 'D? ?']], Anaquote.formatOptions(['HEL', 'D'], '__ _'))
+})
+
 
 test('formattedOptions', () => {
   let model = new Anaquote('HEL LOW ORL D', '5 5!')
@@ -81,10 +102,30 @@ test('quotation', () => {
   assert.equal('HELLO WORLD!', model.quotation())
 })
 
+test('word', () => {
+  let model = new Anaquote('GOO DBY E!', '4 3!')
+  assert.equal('????', model.word(0))
+  assert.equal('???', model.word(1))
+})
+
+test('wordOptions', () => {
+  let model = new Anaquote('GOO DBY E!', '4 3!')
+  assert.equal(['????'], model.wordOptions(0))
+  assert.equal(['???'], model.wordOptions(1))
+})
+
+test('formattedWordOptions', () => {
+  let model = new Anaquote('GOO DBY E!', '4 3!')
+  assert.equal([['????', '???? ']], model.formattedWordOptions(0))
+  assert.equal([['???', '???!']], model.formattedWordOptions(1))
+})
+
+
 suite('SelectionView')
 
 class TestSelectionView extends SelectionView {
-  render() { this.$el.append(`<option>${this.i}</option>`) }
+  modelOptions(i) { return [['?', '?'], [`${i}`, `${i},  `]] }
+  modelValue(i) { return `${i}` }
 }
 
 test('constructor', () => {
@@ -102,6 +143,17 @@ test('$options', () => {
   assert.empty(view.$options)
   view.$el.append('<option>foo</option>', '<option>bar</option>')
   assert.equal(['foo', 'bar'], view.$options.map(o => o.value))
+})
+
+test('render', () => {
+  let view = new TestSelectionView(new Anaquote('HEL LOW ORL D'), 0)
+  assert.equal(view, view.render())
+  assert.equal(['?', '0'], view.$options.map(o => o.value))
+  assert.equal('0,&nbsp;&nbsp;', view.$options[1].text)
+  assert.hasValue('0', view.$el)
+
+  view.render()
+  assert.equal(['?', '0'], view.$options.map(o => o.value))
 })
 
 suite('SelectionsView')
@@ -130,33 +182,19 @@ test('constructor', () => {
 test('render renders subviews', () => {
   let view = new TestSelectionsView(new Anaquote('HEL LOW ORL D', '5 5!'))
   assert.same(view, view.render())
-  assert.equal('0', view.subviews[0].$options[0].value)
-  assert.equal('1', view.subviews[1].$options[0].value)
+  assert.equal('0', view.subviews[0].$options[1].value)
+  assert.equal('1', view.subviews[1].$options[1].value)
 })
 
 suite('TrigramSelectionView')
 
 test('extends SelectionView', () => {
-  assert.instanceOf(SelectionView, new TrigramSelectionView(new Anaquote(''), 0))
-})
-
-test('render', () => {
-  let view = new TrigramSelectionView(new Anaquote('HEL LOW ORL D', '5  5!'), 1)
-  assert.equal(view, view.render())
-  let $el = view.$el
-  let opts = view.$options
-  assert.equal(['???', 'HEL', 'LOW', 'ORL', 'D'], opts.map(o => o.value))
-  assert.equal('??&nbsp;&nbsp;?', opts[0].text)
-  assert.hasValue('???', $el)
-
+  let view = new TrigramSelectionView(new Anaquote('HEL LOW ORL D', '5 5!'), 1)
+  assert.instanceOf(SelectionView, view)
+  assert.equal(view.model.formattedOptions(1), view.modelOptions(1))
+  assert.equal('???', view.modelValue(1))
   view.model.select(1, 'HEL')
-  view.render()
-  assert.equal(['???', 'HEL', 'LOW', 'ORL', 'D'], view.$options.map(o => o.value))
-  assert.hasValue('HEL', $el)
-
-  view.model.select(2, 'LOW')
-  view.render()
-  assert.equal(['???', 'HEL', 'ORL', 'D'], view.$options.map(o => o.value))
+  assert.equal('HEL', view.modelValue(1))
 })
 
 test('selecting an option updates the model', () => {
@@ -169,14 +207,10 @@ test('selecting an option updates the model', () => {
 suite('WordSelectionView')
 
 test('extends SelectionView', () => {
-  assert.instanceOf(SelectionView, new WordSelectionView(new Anaquote(''), 0))
-})
-
-test('render', () => {
-  let view = new WordSelectionView(new Anaquote('HEL LOW ORL D', '5,  5!'), 0)
-  assert.equal(view, view.render())
-  let $el = view.$el
-  assert.hasValue('?????', $el)
+  let view = new WordSelectionView(new Anaquote('HEL LOW ORL D', '5 5!'), 0)
+  assert.instanceOf(SelectionView, view)
+  assert.equal(view.model.formattedWordOptions(1), view.modelOptions(1))
+  assert.equal('?????', view.modelValue(0))
 })
 
 suite('TrigramsView')
@@ -196,7 +230,7 @@ test('extends SelectionsView', () => {
   let view = new WordsView(model)
   assert.instanceOf(SelectionsView, view)
   assert.same(WordSelectionView, view.subviewClass)
-  assert.equal([1,2], view.selections())
+  assert.equal(model.words, view.selections())
 })
 
 suite('QuotationView')
@@ -283,7 +317,7 @@ test('newAnaquote', () => {
   let anaquote = view.newAnaquote()
   assert.instanceOf(Anaquote, anaquote)
   assert.equal(['HEL', 'LOW', 'ORL', 'D'], anaquote.trigrams)
-  assert.equal('5 5!', anaquote.enumeration)
+  assert.equal([5, ' ', 5, '!'], anaquote.enumeration)
 })
 
 suite('ApplicationView')
@@ -305,7 +339,7 @@ test('clicking Start makes a new rendered AnaquoteView', () => {
   view.input.$start.click()
   assert.instanceOf(AnaquoteView, view.anaquote)
   assert.equal(['HEL', 'LOW', 'ORL', 'D'], view.anaquote.model.trigrams)
-  assert.equal('5 5!', view.anaquote.model.enumeration)
+  assert.equal([5, ' ', 5, '!'], view.anaquote.model.enumeration)
   assert.same(view.anaquote.$el[0], view.$el.children().last()[0])
   assert.hasText('????? ?????!', view.anaquote.quotation.$el)
 })

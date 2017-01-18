@@ -2,6 +2,21 @@ const { load, assert, refute, jsdom, sinon } = require('./test_helper')
 
 load('anaquote/anaquote.js')
 
+suite('Array utils')
+
+test('remove', () => {
+  let array = [1, 2, 3, 1]
+  assert.equal([2, 3, 1], array.remove(1))
+  assert.equal([1, 2, 3, 1], array)
+  assert.same(array, array.remove(0))
+})
+test('subtract', () => {
+  let array = [1, 2, 3, 1]
+  assert.equal([3, 1], array.subtract([1, 2, 4]))
+  assert.same(array, array.subtract([4, 5]))
+})
+
+
 suite('Anaquote')
 
 test('constructor', () => {

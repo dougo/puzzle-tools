@@ -1,3 +1,15 @@
+Array.prototype.remove = function (x) {
+  let i = this.indexOf(x)
+  if (i < 0) return this
+  let copy = this.slice()
+  copy.splice(i, 1)
+  return copy
+}
+// Note: This only removes one instance of each element of array.
+Array.prototype.subtract = function (array) {
+  return array.reduce((remainder, x) => remainder.remove(x), this)
+}
+
 class Anaquote {
   constructor (trigrams, enumeration = '') {
     this.trigrams = trigrams.split(' ')
@@ -8,19 +20,8 @@ class Anaquote {
     this.wordBlanks = this.constructor.makeWordBlanks(this.enumeration)
   }
   options(i) {
-    function del(array, elt) { // 'delete' is a keyword...
-      let i = array.indexOf(elt)
-      if (i >= 0) array.splice(i, 1)
-      return array
-    }
-    function remove(array, elt) { return del(array.slice(), elt) }
-    function subtract(array1, array2) {
-      let copy = array1.slice()
-      array2.forEach(x => del(copy, x))
-      return copy
-    }
-    let otherSelections = remove(this.selections, this.selection(i))
-    let unselectedTrigrams = subtract(this.trigrams, otherSelections)
+    let otherSelections = this.selections.remove(this.selection(i))
+    let unselectedTrigrams = this.trigrams.subtract(otherSelections)
     return ['???', ...unselectedTrigrams]
   }
   selection(i) {

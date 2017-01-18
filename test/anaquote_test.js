@@ -140,6 +140,12 @@ test('word', () => {
   assert.equal('??E', model.word(1))
 })
 
+test('selectWord', () => {
+  let model = new Anaquote('GOO DBY E', '4 3!')
+  model.selectWord(0, 'GOOD')
+  assert.equal('GOOD', model.word(0))
+})
+
 test('selectionPermutations', () => {
   let model = new Anaquote('HEL LOW ORL D')
   assert.equal([[]], model.selectionPermutations(1, 0))
@@ -262,6 +268,13 @@ test('extends SelectionView', () => {
   assert.instanceOf(SelectionView, view)
   assert.equal(view.model.formattedWordOptions(1), view.modelOptions(1))
   assert.equal('?????', view.modelValue(0))
+})
+
+test('selecting an option updates the model', () => {
+  let view = new WordSelectionView(new Anaquote('HEL LOW ORL D', '5 5!', new Set(['HELLO'])), 0)
+  let $el = view.render().$el
+  $el.val('HELLO').change()
+  assert.equal('HELLO', view.model.word(0))
 })
 
 suite('TrigramsView')

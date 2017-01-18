@@ -78,6 +78,9 @@ class Anaquote {
   word(i) {
     return this.words[i]
   }
+  selectWord(i, word) {
+    this.words[i] = word
+  }
   selectionPermutations(start, end, options = this.trigrams.subtract(this.selections)) {
     if (start > end) return [[]]
     let startOptions = this.isSelected(start) ? [this.selection(start)] : options
@@ -145,6 +148,10 @@ class TrigramSelectionView extends SelectionView {
 }
 
 class WordSelectionView extends SelectionView {
+  constructor (model, i) {
+    super(model, i)
+    this.$el.change(() => { this.model.selectWord(this.i, this.$el.val()) })
+  }
   modelOptions(i) { return this.model.formattedWordOptions(i) }
   modelValue(i) { return this.model.word(i) }
 }

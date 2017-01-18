@@ -32,6 +32,9 @@ class Anaquote {
     this.selections[i] = trigram
     this.words = this.constructor.makeWords(this.enumeration, this.selections)
   }
+  isSelected(i) {
+    return this.trigrams.includes(this.selection(i))
+  }
   static parseEnumeration(enumeration) {
     return enumeration.split(/(\d+)/).map(token => {
       let len = Number.parseInt(token)
@@ -74,8 +77,24 @@ class Anaquote {
   word(i) {
     return this.words[i]
   }
+  selectionPermutations(start, end, options = this.trigrams.subtract(this.selections)) {
+    if (start > end) return [[]]
+    let startOptions = this.isSelected(start) ? [this.selection(start)] : options
+    let nextPermSets = startOptions.map(t => {
+      let nextPerms = this.selectionPermutations(start + 1, end, options.remove(t))
+      return nextPerms.map(p => [t, ...p])
+    })
+    return [].concat(...nextPermSets)
+  }
   wordOptions(i) {
-    return [this.word(i)]
+    let start = this.words.slice(0, i).join('').length
+    let len = this.word(i).length
+    let startTrigram = Math.floor(start / 3)
+    let endTrigram = Math.floor((start + len) / 3)
+    let perms = this.selectionPermutations(startTrigram, endTrigram)
+    let offset = start % 3
+    let opts = [this.word(i), ...perms.map(p => p.join('').substr(offset, len))]
+    return [...new Set(opts)] // remove dupes
   }
   formattedWordOptions(i) {
     return this.constructor.formatOptions(this.wordOptions(i), this.wordBlanks[i])

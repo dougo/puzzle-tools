@@ -63,6 +63,15 @@ test('allow duplicate selections if duplicate trigrams', () => {
   assert.equal(['???', 'FLY'], model.options(2))
 })
 
+test('isSelected', () => {
+  let model = new Anaquote('HEL LOW ORL D')
+  refute(model.isSelected(0))
+  refute(model.isSelected(1))
+  model.select(0, 'LOW')
+  assert(model.isSelected(0))
+  refute(model.isSelected(1))
+})
+
 test('parseEnumeration', () => {
   assert.equal([3], Anaquote.parseEnumeration('3'))
   assert.equal([5, ', ', 5, '!'], Anaquote.parseEnumeration('5, 5!'))
@@ -121,23 +130,38 @@ test('quotation', () => {
 })
 
 test('word', () => {
-  let model = new Anaquote('GOO DBY E!', '4 3!')
+  let model = new Anaquote('GOO DBY E', '4 3!')
   assert.equal('????', model.word(0))
   assert.equal('??E', model.word(1))
 })
 
+test('selectionPermutations', () => {
+  let model = new Anaquote('HEL LOW ORL D')
+  assert.equal([[]], model.selectionPermutations(1, 0))
+  assert.equal([['HEL'], ['LOW'], ['ORL']], model.selectionPermutations(0, 0))
+  assert.equal([['HEL', 'LOW'], ['HEL', 'ORL'],
+                ['LOW', 'HEL'], ['LOW', 'ORL'],
+                ['ORL', 'HEL'], ['ORL', 'LOW']], model.selectionPermutations(0, 1))
+  model.select(0, 'HEL')
+  assert.equal([['HEL']], model.selectionPermutations(0, 0))
+  assert.equal([['LOW'], ['ORL']], model.selectionPermutations(1, 1))
+  assert.equal([['HEL', 'LOW'], ['HEL', 'ORL']], model.selectionPermutations(0, 1))
+})
+
 test('wordOptions', () => {
-  let model = new Anaquote('GOO DBY E!', '4 3!')
-  assert.equal(['????'], model.wordOptions(0))
-  assert.equal(['??E'], model.wordOptions(1))
+  let model = new Anaquote('HEL LOW ORL D', '5 5!')
+  assert.equal(['?????', 'HELLO', 'HELOR', 'LOWHE', 'LOWOR', 'ORLHE', 'ORLLO'], model.wordOptions(0))
+  assert.equal(['????D', 'LLOWD', 'LORLD', 'WHELD', 'WORLD', 'LHELD'], model.wordOptions(1))
+  model.select(1, 'LOW')
+  model.select(2, 'ORL')
+  assert.equal(['WORLD'], model.wordOptions(1))
 })
 
 test('formattedWordOptions', () => {
-  let model = new Anaquote('GOO DBY E!', '4 3!')
-  assert.equal([['????', '???? ']], model.formattedWordOptions(0))
-  assert.equal([['??E', '??E!']], model.formattedWordOptions(1))
+  let model = new Anaquote('GOO DBY E', '4 3!')
+  assert.equal([['????', '???? '], ['GOOD', 'GOOD '], ['DBYG', 'DBYG ']], model.formattedWordOptions(0))
+  assert.equal([['??E', '??E!'], ['OOE', 'OOE!'], ['BYE', 'BYE!']], model.formattedWordOptions(1))
 })
-
 
 suite('SelectionView')
 

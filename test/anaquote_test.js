@@ -27,6 +27,11 @@ test('constructor', () => {
   assert.equal(['?????', '????D'], model.words)
   assert.equal(['___', '__ _', '___', '_!'], model.blanks)
   assert.equal(['_____ ', '_____!'], model.wordBlanks)
+  assert.instanceOf(Set, model.wordSet)
+  assert.equal(0, model.wordSet.size)
+  let wordSet = new Set(['HELLO', 'WORLD'])
+  model = new Anaquote('HEL LOW ORL D', '5 5!', wordSet)
+  assert.same(wordSet, model.wordSet)
 })
 
 test('options', () => {
@@ -150,15 +155,19 @@ test('selectionPermutations', () => {
 
 test('wordOptions', () => {
   let model = new Anaquote('HEL LOW ORL D', '5 5!')
-  assert.equal(['?????', 'HELLO', 'HELOR', 'LOWHE', 'LOWOR', 'ORLHE', 'ORLLO'], model.wordOptions(0))
-  assert.equal(['????D', 'LLOWD', 'LORLD', 'WHELD', 'WORLD', 'LHELD'], model.wordOptions(1))
+  assert.equal(['?????'], model.wordOptions(0))
+  assert.equal(['????D'], model.wordOptions(1))
+
+  model = new Anaquote('HEL LOW ORL D', '5 5!', new Set(['HELLO', 'HELOR', 'WORLD', 'LLOWD']))
+  assert.equal(['?????', 'HELLO', 'HELOR'], model.wordOptions(0))
+  assert.equal(['????D', 'LLOWD', 'WORLD'], model.wordOptions(1))
   model.select(1, 'LOW')
   model.select(2, 'ORL')
   assert.equal(['WORLD'], model.wordOptions(1))
 })
 
 test('formattedWordOptions', () => {
-  let model = new Anaquote('GOO DBY E', '4 3!')
+  let model = new Anaquote('GOO DBY E', '4 3!', new Set(['GOOD', 'DBYG', 'OOE', 'BYE']))
   assert.equal([['????', '???? '], ['GOOD', 'GOOD '], ['DBYG', 'DBYG ']], model.formattedWordOptions(0))
   assert.equal([['??E', '??E!'], ['OOE', 'OOE!'], ['BYE', 'BYE!']], model.formattedWordOptions(1))
 })
@@ -360,6 +369,9 @@ test('newAnaquote', () => {
   assert.instanceOf(Anaquote, anaquote)
   assert.equal(['HEL', 'LOW', 'ORL', 'D'], anaquote.trigrams)
   assert.equal([5, ' ', 5, '!'], anaquote.enumeration)
+  assert.instanceOf(Set, anaquote.wordSet)
+  let wordSet = new Set(['HELLO', 'WORLD'])
+  assert.same(wordSet, view.newAnaquote(wordSet).wordSet)
 })
 
 suite('ApplicationView')
@@ -370,8 +382,6 @@ test('constructor', () => {
   assert.same($el, view.$el)
   assert.instanceOf(InputView, view.input)
   assert.same(view.input.$el[0], view.$el.children()[0])
-  assert.instanceOf(Set, view.words)
-  assert.equal(0, view.words.size)
 })
 
 test('clicking Start makes a new rendered AnaquoteView', () => {
@@ -384,6 +394,11 @@ test('clicking Start makes a new rendered AnaquoteView', () => {
   assert.equal([5, ' ', 5, '!'], view.anaquote.model.enumeration)
   assert.same(view.anaquote.$el[0], view.$el.children().last()[0])
   assert.hasText(view.anaquote.model.quotation(), view.anaquote.quotation.$el)
+  assert.instanceOf(Set, view.anaquote.model.wordSet)
+
+  view.words = new Set(['HELLO', 'WORLD'])
+  view.input.$start.click()
+  assert.same(view.words, view.anaquote.model.wordSet)
 })
 
 test('clicking Start removes the old AnaquoteView first', () => {

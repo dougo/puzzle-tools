@@ -11,13 +11,14 @@ Array.prototype.subtract = function (array) {
 }
 
 class Anaquote {
-  constructor (trigrams, enumeration = '') {
+  constructor (trigrams, enumeration = '', wordSet = new Set()) {
     this.trigrams = trigrams.split(' ')
     this.selections = this.trigrams.map(t => t.length == 3 ? '???' : t)
     this.enumeration = this.constructor.parseEnumeration(enumeration)
     this.words = this.constructor.makeWords(this.enumeration, this.selections)
     this.blanks = this.constructor.makeBlanks(this.enumeration)
     this.wordBlanks = this.constructor.makeWordBlanks(this.enumeration)
+    this.wordSet = wordSet
   }
   options(i) {
     if (this.selection(i).length < 3) return [this.selection(i)]
@@ -93,7 +94,9 @@ class Anaquote {
     let endTrigram = Math.floor((start + len) / 3)
     let perms = this.selectionPermutations(startTrigram, endTrigram)
     let offset = start % 3
-    let opts = [this.word(i), ...perms.map(p => p.join('').substr(offset, len))]
+    let words = perms.map(p => p.join('').substr(offset, len))
+    words = words.filter(w => this.wordSet.has(w))
+    let opts = [this.word(i), ...words]
     return [...new Set(opts)] // remove dupes
   }
   formattedWordOptions(i) {
@@ -200,7 +203,7 @@ class InputView {
     this.$el = $('<div>').append(this.$trigrams, this.$enumeration, this.$start)
     this.$el.children().wrap('<div>') // to stack them vertically
   }
-  newAnaquote() { return new Anaquote(this.$trigrams.val(), this.$enumeration.val()) }
+  newAnaquote(wordSet) { return new Anaquote(this.$trigrams.val(), this.$enumeration.val(), wordSet) }
 }
 
 class ApplicationView {
@@ -210,14 +213,13 @@ class ApplicationView {
     this.$el.append(this.input.$el)
     this.input.$start.click(() => {
       if (this.anaquote) this.anaquote.$el.remove()
-      this.anaquote = new AnaquoteView(this.input.newAnaquote()).render()
+      this.anaquote = new AnaquoteView(this.input.newAnaquote(this.words)).render()
       this.$el.append(this.anaquote.$el)
     })
-    this.words = new Set()
   }
   fetchWords() {
     $.get('../vendor/NPLCombinedWordList.txt', 'text/plain').done(data => {
-      this.words = new Set(data.split(/\r?\n/))
+      this.words = new Set(data.split(/\r?\n/).map(w => w.toUpperCase()))
       console.log('Fetched wordlist.')
     }).fail(data => {
       console.log('Failed to fetch wordlist:')

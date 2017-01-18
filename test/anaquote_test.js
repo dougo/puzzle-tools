@@ -22,29 +22,29 @@ test('constructor', () => {
   assert.equal('', new Anaquote('').enumeration)
   let model = new Anaquote('HEL LOW ORL D', '5 5!')
   assert.equal(['HEL', 'LOW', 'ORL', 'D'], model.trigrams)
-  assert.equal(['???', '???', '???', '???'], model.selections)
+  assert.equal(['???', '???', '???', 'D'], model.selections)
   assert.equal([5, ' ', 5, '!'], model.enumeration)
-  assert.equal(['?????', '?????'], model.words)
+  assert.equal(['?????', '????D'], model.words)
   assert.equal(['___', '__ _', '___', '_!'], model.blanks)
   assert.equal(['_____ ', '_____!'], model.wordBlanks)
 })
 
 test('options', () => {
   let model = new Anaquote('HEL LOW ORL D')
-  assert.equal(['???', 'HEL', 'LOW', 'ORL', 'D'], model.options(0))
-  assert.equal(['???', 'HEL', 'LOW', 'ORL', 'D'], model.options(3))
+  assert.equal(['???', 'HEL', 'LOW', 'ORL'], model.options(0))
+  assert.equal(['D'], model.options(3))
 })
 
 test('select', () => {
   let model = new Anaquote('HEL LOW ORL D', '5 5!')
   assert.equal('???', model.selection(0))
-  assert.equal('???', model.selection(3))
+  assert.equal('D', model.selection(3))
 
   model.select(0, 'HEL')
-  model.select(3, 'D')
+  model.select(2, 'ORL')
   assert.equal('HEL', model.selection(0))
-  assert.equal('D', model.selection(3))
-  assert.equal(['HEL??', '????D'], model.words)
+  assert.equal('ORL', model.selection(2))
+  assert.equal(['HEL??', '?ORLD'], model.words)
 })
 
 test('omit selected trigrams from other options', () => {
@@ -66,6 +66,11 @@ test('allow duplicate selections if duplicate trigrams', () => {
 test('parseEnumeration', () => {
   assert.equal([3], Anaquote.parseEnumeration('3'))
   assert.equal([5, ', ', 5, '!'], Anaquote.parseEnumeration('5, 5!'))
+})
+
+test('makeWords', () => {
+  assert.equal(['YAY'], Anaquote.makeWords([3], ['YAY']))
+  assert.equal(['HELLO', 'WORLD'], Anaquote.makeWords([5, ', ', 5, '!'], ['HEL', 'LOW', 'ORL', 'D']))
 })
 
 test('makeBlankString', () => {
@@ -100,39 +105,37 @@ test('formatOptions', () => {
   assert.equal([['HEL', 'HE L'], ['D', 'D? ?']], Anaquote.formatOptions(['HEL', 'D'], '__ _'))
 })
 
-
 test('formattedOptions', () => {
   let model = new Anaquote('HEL LOW ORL D', '5 5!')
-  assert.equal([['???', '?? ?'], ['HEL', 'HE L'], ['LOW', 'LO W'], ['ORL', 'OR L'], ['D', 'D? ?']],
+  assert.equal([['???', '?? ?'], ['HEL', 'HE L'], ['LOW', 'LO W'], ['ORL', 'OR L']],
                model.formattedOptions(1))
 })
 
 test('quotation', () => {
   let model = new Anaquote('HEL LOW ORL D', '5 5!')
-  assert.equal('????? ?????!', model.quotation())
+  assert.equal('????? ????D!', model.quotation())
   model.select(0, 'HEL')
   model.select(1, 'LOW')
   model.select(2, 'ORL')
-  model.select(3, 'D')
   assert.equal('HELLO WORLD!', model.quotation())
 })
 
 test('word', () => {
   let model = new Anaquote('GOO DBY E!', '4 3!')
   assert.equal('????', model.word(0))
-  assert.equal('???', model.word(1))
+  assert.equal('??E', model.word(1))
 })
 
 test('wordOptions', () => {
   let model = new Anaquote('GOO DBY E!', '4 3!')
   assert.equal(['????'], model.wordOptions(0))
-  assert.equal(['???'], model.wordOptions(1))
+  assert.equal(['??E'], model.wordOptions(1))
 })
 
 test('formattedWordOptions', () => {
   let model = new Anaquote('GOO DBY E!', '4 3!')
   assert.equal([['????', '???? ']], model.formattedWordOptions(0))
-  assert.equal([['???', '???!']], model.formattedWordOptions(1))
+  assert.equal([['??E', '??E!']], model.formattedWordOptions(1))
 })
 
 
@@ -260,7 +263,7 @@ test('constructor', () => {
 test('render', () => {
   let view = new QuotationView(new Anaquote('HEL LOW ORL D', '5 5!'))
   assert.same(view, view.render())
-  assert.hasText('????? ?????!', view.$el)
+  assert.hasText(view.model.quotation(), view.$el)
 })
 
 suite('AnaquoteView')
@@ -289,14 +292,14 @@ test('render', () => {
   assert.same(view, view.render())
   refute.empty(view.trigrams.subviews[0].$options)
   refute.empty(view.words.subviews[0].$options)
-  assert.hasText('????? ?????!', view.quotation.$el)
+  assert.hasText(view.model.quotation(), view.quotation.$el)
 })
 
 test('selecting an option re-renders', () => {
   let view = new AnaquoteView(new Anaquote('HEL LOW ORL D', '5 5!')).render()
   view.trigrams.subviews[1].$el.val('LOW').change()
   refute.includes(view.trigrams.subviews[0].$options.map(o => o.value), 'LOW')
-  assert.hasText('???LO W????!', view.quotation.$el)
+  assert.hasText(view.model.quotation(), view.quotation.$el)
 })
 
 suite('InputView')
@@ -356,7 +359,7 @@ test('clicking Start makes a new rendered AnaquoteView', () => {
   assert.equal(['HEL', 'LOW', 'ORL', 'D'], view.anaquote.model.trigrams)
   assert.equal([5, ' ', 5, '!'], view.anaquote.model.enumeration)
   assert.same(view.anaquote.$el[0], view.$el.children().last()[0])
-  assert.hasText('????? ?????!', view.anaquote.quotation.$el)
+  assert.hasText(view.anaquote.model.quotation(), view.anaquote.quotation.$el)
 })
 
 test('clicking Start removes the old AnaquoteView first', () => {

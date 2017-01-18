@@ -13,13 +13,14 @@ Array.prototype.subtract = function (array) {
 class Anaquote {
   constructor (trigrams, enumeration = '') {
     this.trigrams = trigrams.split(' ')
-    this.selections = this.trigrams.map(t => '???')
+    this.selections = this.trigrams.map(t => t.length == 3 ? '???' : t)
     this.enumeration = this.constructor.parseEnumeration(enumeration)
-    this.words = this.enumeration.filter(t => typeof t === 'number').map(n => '?'.repeat(n))
+    this.words = this.constructor.makeWords(this.enumeration, this.selections)
     this.blanks = this.constructor.makeBlanks(this.enumeration)
     this.wordBlanks = this.constructor.makeWordBlanks(this.enumeration)
   }
   options(i) {
+    if (this.selection(i).length < 3) return [this.selection(i)]
     let otherSelections = this.selections.remove(this.selection(i))
     let unselectedTrigrams = this.trigrams.subtract(otherSelections)
     return ['???', ...unselectedTrigrams]
@@ -29,19 +30,22 @@ class Anaquote {
   }
   select(i, trigram) {
     this.selections[i] = trigram
-    let string = this.selections.join('')
-    let start = 0
-    this.words = this.enumeration.filter(t => typeof t === 'number').map(len => {
-      let word = string.substr(start, len)
-      start += len
-      return word
-    })
+    this.words = this.constructor.makeWords(this.enumeration, this.selections)
   }
   static parseEnumeration(enumeration) {
     return enumeration.split(/(\d+)/).map(token => {
       let len = Number.parseInt(token)
       return isNaN(len) ? token : len
     }).filter(s => s !== '')
+  }
+  static makeWords(parsedEnumeration, selections) {
+    let string = selections.join('')
+    let start = 0
+    return parsedEnumeration.filter(t => typeof t === 'number').map(len => {
+      let word = string.substr(start, len)
+      start += len
+      return word
+    })
   }
   static makeBlankString(parsedEnumeration) {
     return parsedEnumeration.map(token => {

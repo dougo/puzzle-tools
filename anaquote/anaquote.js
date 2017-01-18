@@ -29,6 +29,13 @@ class Anaquote {
   }
   select(i, trigram) {
     this.selections[i] = trigram
+    let string = this.selections.join('')
+    let start = 0
+    this.words = this.enumeration.filter(t => typeof t === 'number').map(len => {
+      let word = string.substr(start, len)
+      start += len
+      return word
+    })
   }
   static parseEnumeration(enumeration) {
     return enumeration.split(/(\d+)/).map(token => {
@@ -145,13 +152,13 @@ class AnaquoteView {
     this.$el.append(this.quotation.$el)
     this.trigrams = new TrigramsView(model)
     this.$el.append(this.trigrams.$el)
-    // this.words = new WordsView(model)
-    // this.$el.append(this.words.$el)
+    this.words = new WordsView(model)
+    this.$el.append(this.words.$el)
     this.$el.change(() => this.render())
   }
   render() {
     this.trigrams.render()
-    // this.words.render()
+    this.words.render()
     this.quotation.render()
     return this
   }

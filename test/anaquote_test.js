@@ -16,7 +16,6 @@ test('subtract', () => {
   assert.same(array, array.subtract([4, 5]))
 })
 
-
 suite('Anaquote')
 
 test('constructor', () => {
@@ -36,8 +35,8 @@ test('options', () => {
   assert.equal(['???', 'HEL', 'LOW', 'ORL', 'D'], model.options(3))
 })
 
-test('selection and select', () => {
-  let model = new Anaquote('HEL LOW ORL D')
+test('select', () => {
+  let model = new Anaquote('HEL LOW ORL D', '5 5!')
   assert.equal('???', model.selection(0))
   assert.equal('???', model.selection(3))
 
@@ -45,6 +44,7 @@ test('selection and select', () => {
   model.select(3, 'D')
   assert.equal('HEL', model.selection(0))
   assert.equal('D', model.selection(3))
+  assert.equal(['HEL??', '????D'], model.words)
 })
 
 test('omit selected trigrams from other options', () => {
@@ -279,16 +279,16 @@ test('constructor', () => {
   assert.same(model, view.trigrams.model)
   assert.same(view.trigrams.$el[0], view.$el.children()[1])
 
-  // assert.instanceOf(WordsView, view.words)
-  // assert.same(model, view.words.model)
-  // assert.same(view.words.$el[0], view.$el.children()[2])
+  assert.instanceOf(WordsView, view.words)
+  assert.same(model, view.words.model)
+  assert.same(view.words.$el[0], view.$el.children()[2])
 })
 
 test('render', () => {
   let view = new AnaquoteView(new Anaquote('HEL LOW ORL D', '5 5!'))
   assert.same(view, view.render())
   refute.empty(view.trigrams.subviews[0].$options)
-  // refute.empty(view.words.subviews[0].$options)
+  refute.empty(view.words.subviews[0].$options)
   assert.hasText('????? ?????!', view.quotation.$el)
 })
 

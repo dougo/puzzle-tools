@@ -55,8 +55,11 @@ test('select', () => {
 test('omit selected trigrams from other options', () => {
   let model = new Anaquote('HEL LOW ORL D')
   model.select(0, 'LOW')
-  assert.includes(model.options(0), 'LOW')
-  refute.includes(model.options(3), 'LOW')
+  assert.equal(['???', 'HEL', 'LOW', 'ORL'], model.options(0))
+  assert.equal(['???', 'HEL', 'ORL'], model.options(1))
+
+  model.select(1, '??W')
+  assert.equal(['??W', 'HEL', 'ORL'], model.options(1))
 })
 
 test('allow duplicate selections if duplicate trigrams', () => {
@@ -141,9 +144,23 @@ test('word', () => {
 })
 
 test('selectWord', () => {
-  let model = new Anaquote('GOO DBY E', '4 3!')
-  model.selectWord(0, 'GOOD')
-  assert.equal('GOOD', model.word(0))
+  let model = new Anaquote('HEL LOW ORL DGR EET ING', '5 5! 8.')
+  model.selectWord(0, 'HELLO')
+  assert.equal('HELLO', model.word(0))
+  assert.equal('HEL', model.selection(0))
+  assert.equal('LO?', model.selection(1))
+
+  model.selectWord(2, 'GREETING')
+  assert.equal('GREETING', model.word(2))
+  assert.equal('?GR', model.selection(3))
+  assert.equal('EET', model.selection(4))
+  assert.equal('ING', model.selection(5))
+
+  model.selectWord(1, 'WORLD')
+  assert.equal('WORLD', model.word(1))
+  assert.equal('LOW', model.selection(1))
+  assert.equal('ORL', model.selection(2))
+  assert.equal('DGR', model.selection(3))
 })
 
 test('selectionPermutations', () => {

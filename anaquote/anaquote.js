@@ -23,8 +23,9 @@ class Anaquote {
   options(i) {
     if (this.selection(i).length < 3) return [this.selection(i)]
     let otherSelections = this.selections.remove(this.selection(i))
-    let unselectedTrigrams = this.trigrams.subtract(otherSelections)
-    return ['???', ...unselectedTrigrams]
+    let trigramOptions = this.trigrams.subtract(otherSelections)
+    let blank = trigramOptions.includes(this.selection(i)) ? '???' : this.selection(i)
+    return [blank, ...trigramOptions]
   }
   selection(i) {
     return this.selections[i]
@@ -80,6 +81,10 @@ class Anaquote {
   }
   selectWord(i, word) {
     this.words[i] = word
+    let start = this.words.slice(0, i).join('').length
+    let string = this.selections.join('')
+    string = string.slice(0, start) + word + string.slice(start + word.length)
+    this.selections = string.match(/..?.?/g)
   }
   selectionPermutations(start, end, options = this.trigrams.subtract(this.selections)) {
     if (start > end) return [[]]
@@ -94,7 +99,7 @@ class Anaquote {
     let start = this.words.slice(0, i).join('').length
     let len = this.word(i).length
     let startTrigram = Math.floor(start / 3)
-    let endTrigram = Math.floor((start + len) / 3)
+    let endTrigram = Math.floor((start + len) / 3)  // TODO: should be start+len-1
     let perms = this.selectionPermutations(startTrigram, endTrigram)
     let offset = start % 3
     let words = perms.map(p => p.join('').substr(offset, len))

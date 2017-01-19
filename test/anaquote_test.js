@@ -182,7 +182,8 @@ suite('SelectionView')
 
 class TestSelectionView extends SelectionView {
   modelOptions(i) { return [['?', '?'], [`${i}`, `${i},  `]] }
-  modelValue(i) { return `${i}` }
+  modelValue(i) { return this.value || `${i}` }
+  modelSelect(i, value) { console.log(`modelSelect(${i}, ${value})`); this.value = value }
 }
 
 test('constructor', () => {
@@ -211,6 +212,13 @@ test('render', () => {
 
   view.render()
   assert.equal(['?', '0'], view.$options.map(o => o.value))
+})
+
+test('selecting an option updates the model', () => {
+  let view = new TestSelectionView(new Anaquote('HEL LOW ORL D'), 0)
+  let $el = view.render().$el
+  $el.val('?').change()
+  assert.equal('?', view.modelValue(0))
 })
 
 suite('SelectionsView')
@@ -250,31 +258,19 @@ test('extends SelectionView', () => {
   assert.instanceOf(SelectionView, view)
   assert.equal(view.model.formattedOptions(1), view.modelOptions(1))
   assert.equal('???', view.modelValue(1))
-  view.model.select(1, 'HEL')
+  view.modelSelect(1, 'HEL')
   assert.equal('HEL', view.modelValue(1))
-})
-
-test('selecting an option updates the model', () => {
-  let view = new TrigramSelectionView(new Anaquote('HEL LOW ORL D', '5 5!'), 0)
-  let $el = view.render().$el
-  $el.val('LOW').change()
-  assert.equal('LOW', view.model.selection(0))
 })
 
 suite('WordSelectionView')
 
 test('extends SelectionView', () => {
-  let view = new WordSelectionView(new Anaquote('HEL LOW ORL D', '5 5!'), 0)
+  let view = new WordSelectionView(new Anaquote('HEL LOW ORL D', '5 5!', new Set(['HELLO'])), 0)
   assert.instanceOf(SelectionView, view)
   assert.equal(view.model.formattedWordOptions(1), view.modelOptions(1))
   assert.equal('?????', view.modelValue(0))
-})
-
-test('selecting an option updates the model', () => {
-  let view = new WordSelectionView(new Anaquote('HEL LOW ORL D', '5 5!', new Set(['HELLO'])), 0)
-  let $el = view.render().$el
-  $el.val('HELLO').change()
-  assert.equal('HELLO', view.model.word(0))
+  view.modelSelect(0, 'HELLO')
+  assert.equal('HELLO', view.modelValue(0))
 })
 
 suite('TrigramsView')

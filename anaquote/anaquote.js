@@ -112,6 +112,7 @@ class SelectionView {
     this.model = model
     this.i = i
     this.$el = $('<select>').addClass('mono')
+    this.$el.change(() => { this.modelSelect(this.i, this.$el.val()) })
   }
   get $options () {
     return Array.from(this.$el.prop('options'))
@@ -139,21 +140,15 @@ class SelectionsView {
 }
 
 class TrigramSelectionView extends SelectionView {
-  constructor (model, i) {
-    super(model, i)
-    this.$el.change(() => { this.model.select(this.i, this.$el.val()) })
-  }
   modelOptions(i) { return this.model.formattedOptions(i) }
   modelValue(i) { return this.model.selection(i) }
+  modelSelect(i, trigram) { this.model.select(i, trigram) }
 }
 
 class WordSelectionView extends SelectionView {
-  constructor (model, i) {
-    super(model, i)
-    this.$el.change(() => { this.model.selectWord(this.i, this.$el.val()) })
-  }
   modelOptions(i) { return this.model.formattedWordOptions(i) }
   modelValue(i) { return this.model.word(i) }
+  modelSelect(i, word) { this.model.selectWord(i, word) }
 }
 
 class TrigramsView extends SelectionsView {

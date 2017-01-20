@@ -13,7 +13,7 @@ Array.prototype.subtract = function (array) {
 class Anaquote {
   constructor (trigrams, enumeration = '', wordSet = new Set()) {
     this.trigrams = trigrams.split(' ')
-    this.selections = this.trigrams.map(t => t.length == 3 ? '???' : t)
+    this.selections = this.trigrams.map(t => t.length === 3 ? '???' : t)
     this.enumeration = this.constructor.parseEnumeration(enumeration)
     this.words = this.constructor.makeWords(this.enumeration, this.selections)
     this.blanks = this.constructor.makeBlanks(this.enumeration)
@@ -21,10 +21,15 @@ class Anaquote {
     this.wordSet = wordSet
   }
   options(i) {
-    if (this.selection(i).length < 3) return [this.selection(i)]
-    let otherSelections = this.selections.remove(this.selection(i))
+    let selection = this.selection(i)
+    if (selection.length < 3) return [selection]
+    let otherSelections = this.selections.remove(selection)
     let trigramOptions = this.trigrams.subtract(otherSelections)
-    let blank = trigramOptions.includes(this.selection(i)) ? '???' : this.selection(i)
+    let blank = this.isSelected(i) ? '???' : selection
+    if (blank !== '???') {
+      let regexp = new RegExp(blank.replace(/\?/, '.'))
+      trigramOptions = trigramOptions.filter(t => regexp.test(t))
+    }
     return [blank, ...trigramOptions]
   }
   selection(i) {

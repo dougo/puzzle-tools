@@ -185,8 +185,11 @@ test('wordOptions', () => {
   assert.equal(['?????', 'HELLO', 'HELOR'], model.wordOptions(0))
   assert.equal(['????D', 'LLOWD', 'WORLD'], model.wordOptions(1))
   model.select(1, 'LOW')
+  assert.equal(['W???D', 'WORLD'], model.wordOptions(1))
   model.select(2, 'ORL')
   assert.equal(['?????', 'WORLD'], model.wordOptions(1))
+  model.select(2, 'HEL')
+  assert.equal(['?????', 'WHELD'], model.wordOptions(1))
 })
 
 test('formattedWordOptions', () => {

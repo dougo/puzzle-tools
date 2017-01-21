@@ -105,13 +105,13 @@ class Anaquote {
     let start = this.words.slice(0, i).join('').length
     let len = word.length
     let startTrigram = Math.floor(start / 3)
-    let endTrigram = Math.floor((start + len) / 3)  // TODO: should be start+len-1
+    let endTrigram = Math.floor((start + len) / 3)  // TODO: should be start+len-1?
     let perms = this.selectionPermutations(startTrigram, endTrigram)
     let offset = start % 3
     let words = perms.map(p => p.join('').substr(offset, len))
     words = words.filter(w => this.wordSet.has(w))
     let blank = word.includes('?') ? word : '?'.repeat(word.length)
-    let opts = [blank, ...words]
+    let opts = [blank, ...words, word]
     return [...new Set(opts)] // remove dupes
   }
   formattedWordOptions(i) {

@@ -27,7 +27,7 @@ class Anaquote {
     let trigramOptions = this.trigrams.subtract(otherSelections)
     let blank = this.isSelected(i) ? '???' : selection
     if (blank !== '???') {
-      let regexp = new RegExp(blank.replace(/\?/, '.'))
+      let regexp = new RegExp(blank.replace(/\?/g, '.'))
       trigramOptions = trigramOptions.filter(t => regexp.test(t))
     }
     return [blank, ...trigramOptions]

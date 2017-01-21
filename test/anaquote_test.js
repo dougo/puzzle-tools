@@ -58,8 +58,8 @@ test('omit selected trigrams from other options', () => {
   assert.equal(['???', 'HEL', 'LOW', 'ORL'], model.options(0))
   assert.equal(['???', 'HEL', 'ORL'], model.options(1))
 
-  model.select(1, 'H??')
-  assert.equal(['H??', 'HEL'], model.options(1))
+  model.select(0, 'L??')
+  assert.equal(['L??', 'LOW'], model.options(0))
 })
 
 test('allow duplicate selections if duplicate trigrams', () => {

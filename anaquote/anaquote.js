@@ -56,8 +56,8 @@ class Anaquote {
   constructor (trigrams, enumeration = '', wordSet = new Set()) {
     this.trigrams = trigrams.split(' ')
     this.enumeration = new Enumeration(enumeration)
-    this.letters = this.trigrams.map(t => t.length === 3 ? '???' : t).join('')
     this.wordSet = wordSet
+    this.letters = this.trigrams.map(t => t.length === 3 ? '???' : t).join('')
   }
   get selections () {
     return this.letters.match(/..?.?/g)
@@ -71,17 +71,22 @@ class Anaquote {
   isSelected(i) {
     return this.trigrams.includes(this.selection(i))
   }
-  options(i) {
+  available(i) {
     let selection = this.selection(i)
     if (selection.length < 3) return [selection]
     let otherSelections = this.selections.remove(selection)
-    let trigramOptions = this.trigrams.subtract(otherSelections)
-    let blank = this.isSelected(i) ? '???' : selection
-    if (blank !== '???') {
-      let regexp = new RegExp(blank.replace(/\?/g, '.'))
-      trigramOptions = trigramOptions.filter(t => regexp.test(t))
+    let avail = this.trigrams.subtract(otherSelections)
+    if (selection.includes('?')) {
+      let regexp = new RegExp(selection.replace(/\?/g, '.'))
+      avail = avail.filter(t => regexp.test(t))
     }
-    return [blank, ...trigramOptions]
+    return avail
+  }
+  options(i) {
+    let selection = this.selection(i)
+    if (selection.length < 3) return [selection]
+    let blank = this.isSelected(i) ? '???' : selection
+    return [blank, ...this.available(i)]
   }
   static fillInBlank(blank, fill) {
     let letters = (fill + '???').split('')
@@ -105,11 +110,11 @@ class Anaquote {
   selectWord(i, word) {
     this.letters = this.letters.replaceAt(this.enumeration.wordStart(i), word)
   }
-  selectionPermutations(start, end, options = this.trigrams.subtract(this.selections)) {
+  selectionPermutations(start, end, selected = []) {
     if (start > end) return [[]]
-    let startOptions = this.isSelected(start) ? [this.selection(start)] : options
+    let startOptions = this.isSelected(start) ? [this.selection(start)] : this.available(start).subtract(selected)
     let nextPermSets = startOptions.map(t => {
-      let nextPerms = this.selectionPermutations(start + 1, end, options.remove(t))
+      let nextPerms = this.selectionPermutations(start + 1, end, [t, ...selected])
       return nextPerms.map(p => [t, ...p])
     })
     return [].concat(...nextPermSets)

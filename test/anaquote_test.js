@@ -133,29 +133,33 @@ test('isSelected', () => {
   refute(model.isSelected(1))
 })
 
+test('available', () => {
+  let model = new Anaquote('HEL LOW ORL D')
+  assert.equal(['HEL', 'LOW', 'ORL'], model.available(0))
+  assert.equal(['D'], model.available(3))
+
+  model.select(0, 'LOW')
+  assert.equal(['HEL', 'LOW', 'ORL'], model.available(0))
+  assert.equal(['HEL', 'ORL'], model.available(1))
+
+  model.select(0, 'L??')
+  assert.equal(['LOW'], model.available(0))
+
+  model = new Anaquote('TSE TSE FLY')
+  assert.equal(['TSE', 'TSE', 'FLY'], model.available(2))
+  model.select(0, 'TSE')
+  assert.equal(['TSE', 'FLY'], model.available(2))
+  model.select(1, 'TSE')
+  assert.equal(['FLY'], model.available(2))
+})
+
 test('options', () => {
   let model = new Anaquote('HEL LOW ORL D')
   assert.equal(['???', 'HEL', 'LOW', 'ORL'], model.options(0))
   assert.equal(['D'], model.options(3))
-})
-
-test('omit selected trigrams from other options', () => {
-  let model = new Anaquote('HEL LOW ORL D')
-  model.select(0, 'LOW')
-  assert.equal(['???', 'HEL', 'LOW', 'ORL'], model.options(0))
-  assert.equal(['???', 'HEL', 'ORL'], model.options(1))
 
   model.select(0, 'L??')
   assert.equal(['L??', 'LOW'], model.options(0))
-})
-
-test('allow duplicate selections if duplicate trigrams', () => {
-  let model = new Anaquote('TSE TSE FLY')
-  assert.equal(['???', 'TSE', 'TSE', 'FLY'], model.options(2))
-  model.select(0, 'TSE')
-  assert.equal(['???', 'TSE', 'FLY'], model.options(2))
-  model.select(1, 'TSE')
-  assert.equal(['???', 'FLY'], model.options(2))
 })
 
 test('fillInBlank', () => {
@@ -219,10 +223,14 @@ test('selectionPermutations', () => {
   assert.equal([['HEL', 'LOW'], ['HEL', 'ORL'],
                 ['LOW', 'HEL'], ['LOW', 'ORL'],
                 ['ORL', 'HEL'], ['ORL', 'LOW']], model.selectionPermutations(0, 1))
+
   model.select(0, 'HEL')
   assert.equal([['HEL']], model.selectionPermutations(0, 0))
   assert.equal([['LOW'], ['ORL']], model.selectionPermutations(1, 1))
   assert.equal([['HEL', 'LOW'], ['HEL', 'ORL']], model.selectionPermutations(0, 1))
+
+  model.select(1, 'LO?')
+  assert.equal([['LOW']], model.selectionPermutations(1, 1))
 })
 
 test('wordOptions', () => {

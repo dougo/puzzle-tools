@@ -55,8 +55,7 @@ class Enumeration {
 class Anaquote {
   constructor (trigrams, enumeration = '', wordSet = new Set()) {
     this.trigrams = trigrams.split(' ')
-    this._enumeration = new Enumeration(enumeration)
-    this.enumeration = this._enumeration.tokens
+    this.enumeration = new Enumeration(enumeration)
     this.letters = this.trigrams.map(t => t.length === 3 ? '???' : t).join('')
     this.wordSet = wordSet
   }
@@ -92,19 +91,19 @@ class Anaquote {
     return options.map(o => [o, this.fillInBlank(blank, o)])
   }
   formattedOptions(i) {
-    return this.constructor.formatOptions(this.options(i), this._enumeration.blanks[i])
+    return this.constructor.formatOptions(this.options(i), this.enumeration.blanks[i])
   }
   quotation() {
-    return this.constructor.fillInBlank(this._enumeration.blankString, this.letters)
+    return this.constructor.fillInBlank(this.enumeration.blankString, this.letters)
   }
   get words () {
-    return this._enumeration.words(this.letters)
+    return this.enumeration.words(this.letters)
   }
   word(i) {
-    return this._enumeration.word(i, this.letters)
+    return this.enumeration.word(i, this.letters)
   }
   selectWord(i, word) {
-    this.letters = this.letters.replaceAt(this._enumeration.wordStart(i), word)
+    this.letters = this.letters.replaceAt(this.enumeration.wordStart(i), word)
   }
   selectionPermutations(start, end, options = this.trigrams.subtract(this.selections)) {
     if (start > end) return [[]]
@@ -117,7 +116,7 @@ class Anaquote {
   }
   wordOptions(i) {
     let word = this.word(i)
-    let start = this._enumeration.wordStart(i)
+    let start = this.enumeration.wordStart(i)
     let len = word.length
     let startTrigram = Math.floor(start / 3)
     let endTrigram = Math.floor((start + len) / 3)  // TODO: should be start+len-1?
@@ -130,7 +129,7 @@ class Anaquote {
     return [...new Set(opts)] // remove dupes
   }
   formattedWordOptions(i) {
-    return this.constructor.formatOptions(this.wordOptions(i), this._enumeration.wordBlanks[i])
+    return this.constructor.formatOptions(this.wordOptions(i), this.enumeration.wordBlanks[i])
   }
 }
 

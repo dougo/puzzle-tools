@@ -83,8 +83,8 @@ test('trigrams', () => {
 })
 
 test('enumeration', () => {
-  assert.equal([], new Anaquote('').enumeration)
-  assert.equal([5, ' ', 5, '!'], new Anaquote('HEL LOW ORL D', '5 5!').enumeration)
+  assert.equal([], new Anaquote('').enumeration.tokens)
+  assert.equal([5, ' ', 5, '!'], new Anaquote('HEL LOW ORL D', '5 5!').enumeration.tokens)
 })
 
 test('wordSet', () => {
@@ -446,7 +446,7 @@ test('newAnaquote', () => {
   let anaquote = view.newAnaquote()
   assert.instanceOf(Anaquote, anaquote)
   assert.equal(['HEL', 'LOW', 'ORL', 'D'], anaquote.trigrams)
-  assert.equal([5, ' ', 5, '!'], anaquote.enumeration)
+  assert.equal([5, ' ', 5, '!'], anaquote.enumeration.tokens)
   assert.instanceOf(Set, anaquote.wordSet)
   let wordSet = new Set(['HELLO', 'WORLD'])
   assert.same(wordSet, view.newAnaquote(wordSet).wordSet)
@@ -469,7 +469,7 @@ test('clicking Start makes a new rendered AnaquoteView', () => {
   view.input.$start.click()
   assert.instanceOf(AnaquoteView, view.anaquote)
   assert.equal(['HEL', 'LOW', 'ORL', 'D'], view.anaquote.model.trigrams)
-  assert.equal([5, ' ', 5, '!'], view.anaquote.model.enumeration)
+  assert.equal([5, ' ', 5, '!'], view.anaquote.model.enumeration.tokens)
   assert.same(view.anaquote.$el[0], view.$el.children().last()[0])
   assert.hasText(view.anaquote.model.quotation(), view.anaquote.quotation.$el)
   assert.instanceOf(Set, view.anaquote.model.wordSet)

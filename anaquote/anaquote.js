@@ -10,14 +10,46 @@ Array.prototype.subtract = function (array) {
   return array.reduce((remainder, x) => remainder.remove(x), this)
 }
 
+class Enumeration {
+  constructor (enumeration) {
+    this.tokens = enumeration.split(/(\d+)/).map(token => {
+      let len = Number.parseInt(token)
+      return isNaN(len) ? token : len
+    }).filter(s => s !== '')
+  }
+  get wordLengths () {
+    return this.tokens.filter(t => typeof t === 'number')
+  }
+  words(letters) {
+    let start = 0
+    return this.wordLengths.map(len => {
+      let word = letters.substr(start, len)
+      start += len
+      return word
+    })
+  }
+  get blankString () {
+    return this.tokens.map(token => {
+      return typeof token === 'string' ? token : '_'.repeat(token)
+    }).join('')
+  }
+  get blanks () {
+    return this.blankString.match(/[^_]*_[^_]*_?[^_]*_?[^_]*/g)
+  }
+  get wordBlanks () {
+    return this.blankString.match(/[^_]*_+[^_]*/g)
+  }
+}
+
 class Anaquote {
   constructor (trigrams, enumeration = '', wordSet = new Set()) {
     this.trigrams = trigrams.split(' ')
     this.selections = this.trigrams.map(t => t.length === 3 ? '???' : t)
-    this.enumeration = this.constructor.parseEnumeration(enumeration)
-    this.words = this.constructor.makeWords(this.enumeration, this.selections)
-    this.blanks = this.constructor.makeBlanks(this.enumeration)
-    this.wordBlanks = this.constructor.makeWordBlanks(this.enumeration)
+    this._enumeration = new Enumeration(enumeration)
+    this.enumeration = this._enumeration.tokens
+    this.words = this._enumeration.words(this.selections.join(''))
+    this.blanks = this._enumeration.blanks
+    this.wordBlanks = this._enumeration.wordBlanks
     this.wordSet = wordSet
   }
   selection(i) {
@@ -25,7 +57,7 @@ class Anaquote {
   }
   select(i, trigram) {
     this.selections[i] = trigram
-    this.words = this.constructor.makeWords(this.enumeration, this.selections)
+    this.words = this._enumeration.words(this.selections.join(''))
   }
   isSelected(i) {
     return this.trigrams.includes(this.selection(i))
@@ -41,32 +73,6 @@ class Anaquote {
       trigramOptions = trigramOptions.filter(t => regexp.test(t))
     }
     return [blank, ...trigramOptions]
-  }
-  static parseEnumeration(enumeration) {
-    return enumeration.split(/(\d+)/).map(token => {
-      let len = Number.parseInt(token)
-      return isNaN(len) ? token : len
-    }).filter(s => s !== '')
-  }
-  static makeWords(parsedEnumeration, selections) {
-    let string = selections.join('')
-    let start = 0
-    return parsedEnumeration.filter(t => typeof t === 'number').map(len => {
-      let word = string.substr(start, len)
-      start += len
-      return word
-    })
-  }
-  static makeBlankString(parsedEnumeration) {
-    return parsedEnumeration.map(token => {
-      return typeof token === 'string' ? token : '_'.repeat(token)
-    }).join('')
-  }
-  static makeBlanks(parsedEnumeration) {
-    return this.makeBlankString(parsedEnumeration).match(/[^_]*_[^_]*_?[^_]*_?[^_]*/g)
-  }
-  static makeWordBlanks(parsedEnumeration) {
-    return this.makeBlankString(parsedEnumeration).match(/[^_]*_+[^_]*/g)
   }
   static fillInBlank(blank, fill) {
     let letters = (fill + '???').split('')

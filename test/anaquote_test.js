@@ -16,6 +16,42 @@ test('subtract', () => {
   assert.same(array, array.subtract([4, 5]))
 })
 
+suite('Enumeration')
+
+test('tokens', () => {
+  assert.equal([3], new Enumeration('3').tokens)
+  assert.equal([5, ', ', 5, '!'], new Enumeration('5, 5!').tokens)
+})
+
+test('wordLengths', () => {
+  assert.equal([3], new Enumeration('3').wordLengths)
+  assert.equal([5, 5], new Enumeration('5, 5!').wordLengths)
+})
+
+test('words', () => {
+  assert.equal(['YAY'], new Enumeration('3').words('YAY'))
+  assert.equal(['HELLO', 'WORLD'], new Enumeration('5, 5!').words('HELLOWORLD'))
+})
+
+test('blankString', () => {
+  assert.equal('___', new Enumeration('3').blankString)
+  assert.equal('_____, _____!', new Enumeration('5, 5!').blankString)
+})
+
+test('blanks', () => {
+  assert.equal(['___'], new Enumeration('3').blanks)
+  assert.equal(['___', '__'], new Enumeration('5').blanks)
+  assert.equal([' ___', '__'], new Enumeration(' 5').blanks)
+  assert.equal(['___', '__, _', '___', '_!'], new Enumeration('5, 5!').blanks)
+  assert.equal(['___!'], new Enumeration('3!').blanks)
+})
+
+test('wordBlanks', () => {
+  assert.equal(['_____'], new Enumeration('5').wordBlanks)
+  assert.equal([' _____'], new Enumeration(' 5').wordBlanks)
+  assert.equal(['_____, ', '_____!'], new Enumeration('5, 5!').wordBlanks)
+})
+
 suite('Anaquote')
 
 test('constructor', () => {
@@ -78,35 +114,6 @@ test('allow duplicate selections if duplicate trigrams', () => {
   assert.equal(['???', 'TSE', 'FLY'], model.options(2))
   model.select(1, 'TSE')
   assert.equal(['???', 'FLY'], model.options(2))
-})
-
-test('parseEnumeration', () => {
-  assert.equal([3], Anaquote.parseEnumeration('3'))
-  assert.equal([5, ', ', 5, '!'], Anaquote.parseEnumeration('5, 5!'))
-})
-
-test('makeWords', () => {
-  assert.equal(['YAY'], Anaquote.makeWords([3], ['YAY']))
-  assert.equal(['HELLO', 'WORLD'], Anaquote.makeWords([5, ', ', 5, '!'], ['HEL', 'LOW', 'ORL', 'D']))
-})
-
-test('makeBlankString', () => {
-  assert.equal('___', Anaquote.makeBlankString([3]))
-  assert.equal('_____, _____!', Anaquote.makeBlankString([5, ', ', 5, '!']))
-})
-
-test('makeBlanks', () => {
-  assert.equal(['___'], Anaquote.makeBlanks([3]))
-  assert.equal(['___', '__'], Anaquote.makeBlanks([5]))
-  assert.equal([' ___', '__'], Anaquote.makeBlanks([' ', 5]))
-  assert.equal(['___', '__ _', '___', '_!'], Anaquote.makeBlanks([5, ' ', 5, '!']))
-  assert.equal(['___,'], Anaquote.makeBlanks([3, ',']))
-})
-
-test('makeWordBlanks', () => {
-  assert.equal(['_____'], Anaquote.makeWordBlanks([5]))
-  assert.equal([' _____'], Anaquote.makeWordBlanks([' ', 5]))
-  assert.equal(['_____ ', '_____!'], Anaquote.makeWordBlanks([5, ' ', 5, '!']))
 })
 
 test('fillInBlank', () => {

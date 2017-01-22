@@ -15,6 +15,19 @@ test('subtract', () => {
   assert.equal([3, 1], array.subtract([1, 2, 4]))
   assert.same(array, array.subtract([4, 5]))
 })
+test('sum', () => {
+  assert.equal(0, [].sum())
+  assert.equal(6, [1, 2, 3].sum())
+})
+
+suite('String utils')
+
+test('replaceAt', () => {
+  let string = 'HELLO'
+  assert.equal('YELLO', string.replaceAt(0, 'Y'))
+  assert.equal('HEXXO', string.replaceAt(2, 'XX'))
+  assert.equal('HELLZZ', string.replaceAt(4, 'ZZ'))
+})
 
 suite('Enumeration')
 
@@ -28,9 +41,20 @@ test('wordLengths', () => {
   assert.equal([5, 5], new Enumeration('5, 5!').wordLengths)
 })
 
+test('wordStart', () => {
+  assert.equal(0, new Enumeration('5, 5!').wordStart(0))
+  assert.equal(5, new Enumeration('5, 5!').wordStart(1))
+  assert.equal(8, new Enumeration('5, 3, 5!').wordStart(2))
+})
+
 test('words', () => {
   assert.equal(['YAY'], new Enumeration('3').words('YAY'))
   assert.equal(['HELLO', 'WORLD'], new Enumeration('5, 5!').words('HELLOWORLD'))
+})
+
+test('word', () => {
+  assert.equal('HELLO', new Enumeration('5, 5!').word(0, 'HELLOWORLD'))
+  assert.equal('WORLD', new Enumeration('5, 5!').word(1, 'HELLOWORLD'))
 })
 
 test('blankString', () => {

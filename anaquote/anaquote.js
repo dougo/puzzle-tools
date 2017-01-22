@@ -9,6 +9,13 @@ Array.prototype.remove = function (x) {
 Array.prototype.subtract = function (array) {
   return array.reduce((remainder, x) => remainder.remove(x), this)
 }
+Array.prototype.sum = function () {
+  return this.reduce((sum, i) => sum + i, 0)
+}
+
+String.prototype.replaceAt = function(i, str) {
+  return this.slice(0, i) + str + this.slice(i + str.length)
+}
 
 class Enumeration {
   constructor (enumeration) {
@@ -20,6 +27,9 @@ class Enumeration {
   get wordLengths () {
     return this.tokens.filter(t => typeof t === 'number')
   }
+  wordStart(i) {
+    return this.wordLengths.slice(0, i).sum()
+  }
   words(letters) {
     let start = 0
     return this.wordLengths.map(len => {
@@ -27,6 +37,9 @@ class Enumeration {
       start += len
       return word
     })
+  }
+  word(i, letters) {
+    return letters.substr(this.wordStart(i), this.wordLengths[i])
   }
   get blankString () {
     return this.tokens.map(token => {
@@ -44,23 +57,21 @@ class Enumeration {
 class Anaquote {
   constructor (trigrams, enumeration = '', wordSet = new Set()) {
     this.trigrams = trigrams.split(' ')
-    this.selections = this.trigrams.map(t => t.length === 3 ? '???' : t)
     this._enumeration = new Enumeration(enumeration)
     this.enumeration = this._enumeration.tokens
-    this.words = this._enumeration.words(this.letters)
     this._blanks = this._enumeration.blanks
     this._wordBlanks = this._enumeration.wordBlanks
+    this.letters = this.trigrams.map(t => t.length === 3 ? '???' : t).join('')
     this.wordSet = wordSet
   }
-  get letters () {
-    return this.selections.join('')
+  get selections () {
+    return this.letters.match(/..?.?/g)
   }
   selection(i) {
-    return this.selections[i]
+    return this.letters.substr(i*3, 3)
   }
   select(i, trigram) {
-    this.selections[i] = trigram
-    this.words = this._enumeration.words(this.letters)
+    this.letters = this.letters.replaceAt(i*3, trigram)
   }
   isSelected(i) {
     return this.trigrams.includes(this.selection(i))
@@ -88,17 +99,16 @@ class Anaquote {
     return this.constructor.formatOptions(this.options(i), this._blanks[i])
   }
   quotation() {
-    return this.selections.map((t, i) => this.constructor.fillInBlank(this._blanks[i], t)).join('')
+    return this.constructor.fillInBlank(this._enumeration.blankString, this.letters)
+  }
+  get words () {
+    return this._enumeration.words(this.letters)
   }
   word(i) {
-    return this.words[i]
+    return this._enumeration.word(i, this.letters)
   }
   selectWord(i, word) {
-    this.words[i] = word
-    let start = this.words.slice(0, i).join('').length
-    let letters = this.letters
-    letters = letters.slice(0, start) + word + letters.slice(start + word.length)
-    this.selections = letters.match(/..?.?/g)
+    this.letters = this.letters.replaceAt(this._enumeration.wordStart(i), word)
   }
   selectionPermutations(start, end, options = this.trigrams.subtract(this.selections)) {
     if (start > end) return [[]]
@@ -111,7 +121,7 @@ class Anaquote {
   }
   wordOptions(i) {
     let word = this.word(i)
-    let start = this.words.slice(0, i).join('').length
+    let start = this._enumeration.wordStart(i)
     let len = word.length
     let startTrigram = Math.floor(start / 3)
     let endTrigram = Math.floor((start + len) / 3)  // TODO: should be start+len-1?

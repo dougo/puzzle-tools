@@ -23,34 +23,32 @@ class Enumeration {
       let len = Number.parseInt(token)
       return isNaN(len) ? token : len
     }).filter(s => s !== '')
-  }
-  get wordLengths () {
-    return this.tokens.filter(t => typeof t === 'number')
-  }
-  wordStart(i) {
-    return this.wordLengths.slice(0, i).sum()
-  }
-  words(letters) {
-    let start = 0
-    return this.wordLengths.map(len => {
-      let word = letters.substr(start, len)
-      start += len
-      return word
+
+    this.wordLengths = this.tokens.filter(t => typeof t === 'number')
+
+    let total = 0
+    this.wordStarts = this.wordLengths.map(len => {
+      let start = total
+      total += len
+      return start
     })
-  }
-  word(i, letters) {
-    return letters.substr(this.wordStart(i), this.wordLengths[i])
-  }
-  get blankString () {
-    return this.tokens.map(token => {
+
+    this.blankString = this.tokens.map(token => {
       return typeof token === 'string' ? token : '_'.repeat(token)
     }).join('')
+
+    this.blanks = this.blankString.match(/[^_]*_[^_]*_?[^_]*_?[^_]*/g)
+
+    this.wordBlanks = this.blankString.match(/[^_]*_+[^_]*/g)
   }
-  get blanks () {
-    return this.blankString.match(/[^_]*_[^_]*_?[^_]*_?[^_]*/g)
+  wordStart(i) {
+    return this.wordStarts[i]
   }
-  get wordBlanks () {
-    return this.blankString.match(/[^_]*_+[^_]*/g)
+  word(i, letters) {
+    return letters.substr(this.wordStarts[i], this.wordLengths[i])
+  }
+  words(letters) {
+    return this.wordLengths.map((len, i) => this.word(i, letters))
   }
 }
 
@@ -59,8 +57,6 @@ class Anaquote {
     this.trigrams = trigrams.split(' ')
     this._enumeration = new Enumeration(enumeration)
     this.enumeration = this._enumeration.tokens
-    this._blanks = this._enumeration.blanks
-    this._wordBlanks = this._enumeration.wordBlanks
     this.letters = this.trigrams.map(t => t.length === 3 ? '???' : t).join('')
     this.wordSet = wordSet
   }
@@ -96,7 +92,7 @@ class Anaquote {
     return options.map(o => [o, this.fillInBlank(blank, o)])
   }
   formattedOptions(i) {
-    return this.constructor.formatOptions(this.options(i), this._blanks[i])
+    return this.constructor.formatOptions(this.options(i), this._enumeration.blanks[i])
   }
   quotation() {
     return this.constructor.fillInBlank(this._enumeration.blankString, this.letters)
@@ -134,7 +130,7 @@ class Anaquote {
     return [...new Set(opts)] // remove dupes
   }
   formattedWordOptions(i) {
-    return this.constructor.formatOptions(this.wordOptions(i), this._wordBlanks[i])
+    return this.constructor.formatOptions(this.wordOptions(i), this._enumeration.wordBlanks[i])
   }
 }
 

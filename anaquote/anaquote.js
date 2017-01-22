@@ -20,6 +20,16 @@ class Anaquote {
     this.wordBlanks = this.constructor.makeWordBlanks(this.enumeration)
     this.wordSet = wordSet
   }
+  selection(i) {
+    return this.selections[i]
+  }
+  select(i, trigram) {
+    this.selections[i] = trigram
+    this.words = this.constructor.makeWords(this.enumeration, this.selections)
+  }
+  isSelected(i) {
+    return this.trigrams.includes(this.selection(i))
+  }
   options(i) {
     let selection = this.selection(i)
     if (selection.length < 3) return [selection]
@@ -31,16 +41,6 @@ class Anaquote {
       trigramOptions = trigramOptions.filter(t => regexp.test(t))
     }
     return [blank, ...trigramOptions]
-  }
-  selection(i) {
-    return this.selections[i]
-  }
-  select(i, trigram) {
-    this.selections[i] = trigram
-    this.words = this.constructor.makeWords(this.enumeration, this.selections)
-  }
-  isSelected(i) {
-    return this.trigrams.includes(this.selection(i))
   }
   static parseEnumeration(enumeration) {
     return enumeration.split(/(\d+)/).map(token => {

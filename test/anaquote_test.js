@@ -34,12 +34,6 @@ test('constructor', () => {
   assert.same(wordSet, model.wordSet)
 })
 
-test('options', () => {
-  let model = new Anaquote('HEL LOW ORL D')
-  assert.equal(['???', 'HEL', 'LOW', 'ORL'], model.options(0))
-  assert.equal(['D'], model.options(3))
-})
-
 test('select', () => {
   let model = new Anaquote('HEL LOW ORL D', '5 5!')
   assert.equal('???', model.selection(0))
@@ -50,6 +44,21 @@ test('select', () => {
   assert.equal('HEL', model.selection(0))
   assert.equal('ORL', model.selection(2))
   assert.equal(['HEL??', '?ORLD'], model.words)
+})
+
+test('isSelected', () => {
+  let model = new Anaquote('HEL LOW ORL D')
+  refute(model.isSelected(0))
+  refute(model.isSelected(1))
+  model.select(0, 'LOW')
+  assert(model.isSelected(0))
+  refute(model.isSelected(1))
+})
+
+test('options', () => {
+  let model = new Anaquote('HEL LOW ORL D')
+  assert.equal(['???', 'HEL', 'LOW', 'ORL'], model.options(0))
+  assert.equal(['D'], model.options(3))
 })
 
 test('omit selected trigrams from other options', () => {
@@ -69,15 +78,6 @@ test('allow duplicate selections if duplicate trigrams', () => {
   assert.equal(['???', 'TSE', 'FLY'], model.options(2))
   model.select(1, 'TSE')
   assert.equal(['???', 'FLY'], model.options(2))
-})
-
-test('isSelected', () => {
-  let model = new Anaquote('HEL LOW ORL D')
-  refute(model.isSelected(0))
-  refute(model.isSelected(1))
-  model.select(0, 'LOW')
-  assert(model.isSelected(0))
-  refute(model.isSelected(1))
 })
 
 test('parseEnumeration', () => {

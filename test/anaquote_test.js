@@ -19,6 +19,11 @@ test('sum', () => {
   assert.equal(0, [].sum())
   assert.equal(6, [1, 2, 3].sum())
 })
+test('uniq', () => {
+  assert.equal([], [].uniq())
+  assert.equal([1, 2, 3], [1, 2, 3, 1].uniq())
+  assert.equal([1, 2, 3], [1, 2, 3].uniq())
+})
 
 suite('String utils')
 
@@ -160,6 +165,9 @@ test('options', () => {
 
   model.select(0, 'L??')
   assert.equal(['L??', 'LOW'], model.options(0))
+
+  model = new Anaquote('TSE TSE FLY')
+  assert.equal(['???', 'TSE', 'FLY'], model.options(0))
 })
 
 test('fillInBlank', () => {

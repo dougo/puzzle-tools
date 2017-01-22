@@ -12,6 +12,9 @@ Array.prototype.subtract = function (array) {
 Array.prototype.sum = function () {
   return this.reduce((sum, i) => sum + i, 0)
 }
+Array.prototype.uniq = function () {
+  return [...new Set(this)]
+}
 
 String.prototype.replaceAt = function(i, str) {
   return this.slice(0, i) + str + this.slice(i + str.length)
@@ -86,7 +89,7 @@ class Anaquote {
     let selection = this.selection(i)
     if (selection.length < 3) return [selection]
     let blank = this.isSelected(i) ? '???' : selection
-    return [blank, ...this.available(i)]
+    return [blank, ...this.available(i)].uniq()
   }
   static fillInBlank(blank, fill) {
     let letters = (fill + '???').split('')
@@ -130,8 +133,7 @@ class Anaquote {
     let words = perms.map(p => p.join('').substr(offset, len))
     words = words.filter(w => this.wordSet.has(w))
     let blank = word.includes('?') ? word : '?'.repeat(word.length)
-    let opts = [blank, ...words, word]
-    return [...new Set(opts)] // remove dupes
+    return [blank, ...words, word].uniq()
   }
   formattedWordOptions(i) {
     return this.constructor.formatOptions(this.wordOptions(i), this.enumeration.wordBlanks[i])

@@ -54,23 +54,34 @@ test('wordBlanks', () => {
 
 suite('Anaquote')
 
-test('constructor', () => {
-  assert.equal('', new Anaquote('').enumeration)
-  let model = new Anaquote('HEL LOW ORL D', '5 5!')
-  assert.equal(['HEL', 'LOW', 'ORL', 'D'], model.trigrams)
-  assert.equal(['???', '???', '???', 'D'], model.selections)
-  assert.equal([5, ' ', 5, '!'], model.enumeration)
-  assert.equal(['?????', '????D'], model.words)
-  assert.equal(['___', '__ _', '___', '_!'], model.blanks)
-  assert.equal(['_____ ', '_____!'], model.wordBlanks)
+test('trigrams', () => {
+  assert.equal(['HEL', 'LOW', 'ORL', 'D'], new Anaquote('HEL LOW ORL D').trigrams)
+})
+
+test('enumeration', () => {
+  assert.equal([], new Anaquote('').enumeration)
+  assert.equal([5, ' ', 5, '!'], new Anaquote('HEL LOW ORL D', '5 5!').enumeration)
+})
+
+test('wordSet', () => {
+  let model = new Anaquote('HEL LOW ORL D')
   assert.instanceOf(Set, model.wordSet)
   assert.equal(0, model.wordSet.size)
+
   let wordSet = new Set(['HELLO', 'WORLD'])
   model = new Anaquote('HEL LOW ORL D', '5 5!', wordSet)
   assert.same(wordSet, model.wordSet)
 })
 
-test('select', () => {
+test('selections', () => {
+  assert.equal(['???', '???', '???', 'D'], new Anaquote('HEL LOW ORL D').selections)
+})
+
+test('words', () => {
+  assert.equal(['?????', '????D'], new Anaquote('HEL LOW ORL D', '5 5!').words)
+})
+
+test('selection and select', () => {
   let model = new Anaquote('HEL LOW ORL D', '5 5!')
   assert.equal('???', model.selection(0))
   assert.equal('D', model.selection(3))

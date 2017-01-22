@@ -48,8 +48,8 @@ class Anaquote {
     this._enumeration = new Enumeration(enumeration)
     this.enumeration = this._enumeration.tokens
     this.words = this._enumeration.words(this.selections.join(''))
-    this.blanks = this._enumeration.blanks
-    this.wordBlanks = this._enumeration.wordBlanks
+    this._blanks = this._enumeration.blanks
+    this._wordBlanks = this._enumeration.wordBlanks
     this.wordSet = wordSet
   }
   selection(i) {
@@ -82,10 +82,10 @@ class Anaquote {
     return options.map(o => [o, this.fillInBlank(blank, o)])
   }
   formattedOptions(i) {
-    return this.constructor.formatOptions(this.options(i), this.blanks[i])
+    return this.constructor.formatOptions(this.options(i), this._blanks[i])
   }
   quotation() {
-    return this.selections.map((t, i) => this.constructor.fillInBlank(this.blanks[i], t)).join('')
+    return this.selections.map((t, i) => this.constructor.fillInBlank(this._blanks[i], t)).join('')
   }
   word(i) {
     return this.words[i]
@@ -121,7 +121,7 @@ class Anaquote {
     return [...new Set(opts)] // remove dupes
   }
   formattedWordOptions(i) {
-    return this.constructor.formatOptions(this.wordOptions(i), this.wordBlanks[i])
+    return this.constructor.formatOptions(this.wordOptions(i), this._wordBlanks[i])
   }
 }
 

@@ -47,17 +47,20 @@ class Anaquote {
     this.selections = this.trigrams.map(t => t.length === 3 ? '???' : t)
     this._enumeration = new Enumeration(enumeration)
     this.enumeration = this._enumeration.tokens
-    this.words = this._enumeration.words(this.selections.join(''))
+    this.words = this._enumeration.words(this.letters)
     this._blanks = this._enumeration.blanks
     this._wordBlanks = this._enumeration.wordBlanks
     this.wordSet = wordSet
+  }
+  get letters () {
+    return this.selections.join('')
   }
   selection(i) {
     return this.selections[i]
   }
   select(i, trigram) {
     this.selections[i] = trigram
-    this.words = this._enumeration.words(this.selections.join(''))
+    this.words = this._enumeration.words(this.letters)
   }
   isSelected(i) {
     return this.trigrams.includes(this.selection(i))
@@ -93,9 +96,9 @@ class Anaquote {
   selectWord(i, word) {
     this.words[i] = word
     let start = this.words.slice(0, i).join('').length
-    let string = this.selections.join('')
-    string = string.slice(0, start) + word + string.slice(start + word.length)
-    this.selections = string.match(/..?.?/g)
+    let letters = this.letters
+    letters = letters.slice(0, start) + word + letters.slice(start + word.length)
+    this.selections = letters.match(/..?.?/g)
   }
   selectionPermutations(start, end, options = this.trigrams.subtract(this.selections)) {
     if (start > end) return [[]]

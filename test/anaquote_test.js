@@ -73,6 +73,10 @@ test('wordSet', () => {
   assert.same(wordSet, model.wordSet)
 })
 
+test('letters', () => {
+  assert.equal('?????????D', new Anaquote('HEL LOW ORL D').letters)
+})
+
 test('selections', () => {
   assert.equal(['???', '???', '???', 'D'], new Anaquote('HEL LOW ORL D').selections)
 })
@@ -81,15 +85,18 @@ test('words', () => {
   assert.equal(['?????', '????D'], new Anaquote('HEL LOW ORL D', '5 5!').words)
 })
 
-test('selection and select', () => {
+test('selection', () => {
   let model = new Anaquote('HEL LOW ORL D', '5 5!')
   assert.equal('???', model.selection(0))
   assert.equal('D', model.selection(3))
+})
 
+test('select', () => {
+  let model = new Anaquote('HEL LOW ORL D', '5 5!')
   model.select(0, 'HEL')
   model.select(2, 'ORL')
-  assert.equal('HEL', model.selection(0))
-  assert.equal('ORL', model.selection(2))
+  assert.equal('HEL???ORLD', model.letters)
+  assert.equal(['HEL', '???', 'ORL', 'D'], model.selections)
   assert.equal(['HEL??', '?ORLD'], model.words)
 })
 

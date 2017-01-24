@@ -26,6 +26,9 @@ String.prototype.replaceAt = function(i, str) {
 Number.prototype.upTo = function (n) {
   return n < this ? [] : Array.from(Array(n - this + 1), (_, i) => this + i)
 }
+Object.defineProperty(Number.prototype, 'times', {
+  get: function () { return (0).upTo(this - 1) }
+})
 
 class Enumeration {
   constructor (enumeration) {
@@ -35,6 +38,8 @@ class Enumeration {
     }).filter(s => s !== '')
 
     this.wordLengths = this.tokens.filter(t => typeof t === 'number')
+
+    this.numWords = this.wordLengths.length
 
     let total = 0
     this.wordStarts = this.wordLengths.map(len => {
@@ -51,6 +56,9 @@ class Enumeration {
 
     this.wordBlanks = this.blankString.match(/[^_]*_+[^_]*/g)
   }
+  wordLength(i) {
+    return this.wordLengths[i]
+  }
   wordStart(i) {
     return this.wordStarts[i]
   }
@@ -58,7 +66,7 @@ class Enumeration {
     return letters.substr(this.wordStarts[i], this.wordLengths[i])
   }
   words(letters) {
-    return this.wordLengths.map((len, i) => this.word(i, letters))
+    return this.numWords.times.map(i => this.word(i, letters))
   }
   trigramRangeForWord(i) {
     let start = this.wordStarts[i]
@@ -116,6 +124,16 @@ class Anaquote {
   selectWord(i, word) {
     this.letters = this.letters.replaceAt(this.enumeration.wordStart(i), word)
   }
+  unselectedWordOption(i) {
+    let len = this.enumeration.wordLength(i)
+    if (i === this.enumeration.numWords - 1) {
+      // Don't unselect the runt (the final non-trigram).
+      let runtLength = this.letters.length % 3
+      let runt = this.letters.slice(-runtLength)
+      return '?'.repeat(len - runtLength) + runt
+    }
+    return '?'.repeat(len)
+  }
   // TODO: move this to Array? maybe named productWithoutRepeats or something??
   static permuteOptions(optionArrays, selections = []) {
     if (optionArrays.length === 0) return [[]]
@@ -134,11 +152,7 @@ class Anaquote {
     let selections = this.selections
     if (fullySelected) {
       // Act as if the word is unselected, to include all alternative word candidates.
-      // But don't unselect the runt (the final non-trigram), if it's part of this word.
-      let lastWord = i === this.words.length - 1
-      let runtLength = this.letters.length % 3
-      let blank = '?'.repeat(lastWord ? word.length - runtLength : word.length)
-      let letters = this.letters.replaceAt(this.enumeration.wordStart(i), blank)
+      let letters = this.letters.replaceAt(this.enumeration.wordStart(i), this.unselectedWordOption(i))
       selections = letters.match(/..?.?/g)
     }
     let availableTrigrams = this.trigrams.subtract(selections)
@@ -155,9 +169,9 @@ class Anaquote {
     return this.constructor.permuteOptions(this.optionArraysForWord(i)).map(p => p.join('').substr(offset, len))
   }
   wordOptions(i) {
-    let word = this.word(i)
     let words = this.wordCandidates(i).filter(w => this.wordSet.has(w))
-    let blank = word.includes('?') ? word : '?'.repeat(word.length)
+    let word = this.word(i)
+    let blank = word.includes('?') ? word : this.unselectedWordOption(i)
     return [blank, ...words, word].uniq()
   }
 

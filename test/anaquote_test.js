@@ -44,6 +44,10 @@ test('upTo', () => {
   assert.equal([1, 2, 3], (1).upTo(3))
   assert.equal([], (3).upTo(1))
 })
+test('times', () => {
+  assert.equal([0, 1, 2], (3).times)
+  assert.equal([], (-3).times)
+})
 
 suite('Enumeration')
 
@@ -52,15 +56,21 @@ test('tokens', () => {
   assert.equal([5, ', ', 5, '!'], new Enumeration('5, 5!').tokens)
 })
 
-test('wordLengths', () => {
-  assert.equal([3], new Enumeration('3').wordLengths)
-  assert.equal([5, 5], new Enumeration('5, 5!').wordLengths)
+test('wordLength', () => {
+  assert.equal(3, new Enumeration('3').wordLength(0))
+  assert.equal(5, new Enumeration('5, 6!').wordLength(0))
+  assert.equal(6, new Enumeration('5, 6!').wordLength(1))
 })
 
 test('wordStart', () => {
-  assert.equal(0, new Enumeration('5, 5!').wordStart(0))
-  assert.equal(5, new Enumeration('5, 5!').wordStart(1))
-  assert.equal(8, new Enumeration('5, 3, 5!').wordStart(2))
+  assert.equal(0, new Enumeration('5, 6!').wordStart(0))
+  assert.equal(5, new Enumeration('5, 6!').wordStart(1))
+  assert.equal(8, new Enumeration('5, 3, 6!').wordStart(2))
+})
+
+test('numWords', () => {
+  assert.equal(1, new Enumeration('3').numWords)
+  assert.equal(2, new Enumeration('5, 5!').numWords)
 })
 
 test('words', () => {
@@ -198,22 +208,14 @@ test('word', () => {
 
 test('selectWord', () => {
   let model = new Anaquote('HEL LOW ORL DGR EET ING', '5 5! 8.')
-  model.selectWord(0, 'HELLO')
-  assert.equal('HELLO', model.word(0))
-  assert.equal('HEL', model.selection(0))
-  assert.equal('LO?', model.selection(1))
-
-  model.selectWord(2, 'GREETING')
-  assert.equal('GREETING', model.word(2))
-  assert.equal('?GR', model.selection(3))
-  assert.equal('EET', model.selection(4))
-  assert.equal('ING', model.selection(5))
-
   model.selectWord(1, 'WORLD')
-  assert.equal('WORLD', model.word(1))
-  assert.equal('LOW', model.selection(1))
-  assert.equal('ORL', model.selection(2))
-  assert.equal('DGR', model.selection(3))
+  assert.equal('?????WORLD????????', model.letters)
+})
+
+test('unselectedWordOption', () => {
+  let model = new Anaquote('HEL LOW ORL D', '5 5')
+  assert.equal('?????', model.unselectedWordOption(0))
+  assert.equal('????D', model.unselectedWordOption(1))
 })
 
 test('permuteOptions', () => {
@@ -287,18 +289,17 @@ test('wordOptions filters through wordSet and includes a blank', () => {
   assert.equal(['??????', ...words], model.wordOptions(0))
 })
 
-test('wordOptions blank matches partially selected word', () => {
+test('wordOptions includes partially selected word', () => {
   model = new Anaquote('HEL LOW ORL D', '5 5!', new Set(['HELLO', 'HELOR', 'WORLD', 'WHELD', 'LLOWD']))
   model.select(1, 'LOW')
   assert.equal(['???LO', 'HELLO'], model.wordOptions(0))
   assert.equal(['W???D', 'WHELD', 'WORLD'], model.wordOptions(1))
 })
 
-test('wordOptions blank is empty when a word is fully selected', () => {
+test('wordOptions includes an unselection option when a word is fully selected', () => {
   let model = new Anaquote('HEL LOW ORL D', '5 5!', new Set(['HELLO', 'HELOR', 'WORLD', 'WHELD', 'LLOWD']))
   model.selectWord(1, 'WORLD')
-  // TODO: blank should be '????D'
-  assert.equal(['?????', 'LLOWD', 'WHELD', 'WORLD'], model.wordOptions(1))
+  assert.equal(['????D', 'LLOWD', 'WHELD', 'WORLD'], model.wordOptions(1))
 })
 
 test('wordOptions includes current word even if not in the wordSet', () => {

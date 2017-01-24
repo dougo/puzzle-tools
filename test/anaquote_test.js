@@ -190,34 +190,6 @@ test('options', () => {
   assert.equal(['???', 'TSE', 'FLY'], model.options(0))
 })
 
-test('fillInBlank', () => {
-  assert.equal('HEL', Anaquote.fillInBlank('___', 'HEL'))
-  assert.equal('D??', Anaquote.fillInBlank('___', 'D'))
-  assert.equal('LO W', Anaquote.fillInBlank('__ _', 'LOW'))
-  assert.equal('D? ?', Anaquote.fillInBlank('__ _', 'D'))
-  assert.equal('D!', Anaquote.fillInBlank('_!', 'D'))
-  assert.equal('H!', Anaquote.fillInBlank('_!', 'HEL'))
-})
-
-test('formatOptions', () => {
-  assert.equal([['HEL', 'HE L'], ['D', 'D? ?']], Anaquote.formatOptions(['HEL', 'D'], '__ _'))
-})
-
-test('formattedOptions', () => {
-  let model = new Anaquote('HEL LOW ORL D', '5 5!')
-  assert.equal([['???', '?? ?'], ['HEL', 'HE L'], ['LOW', 'LO W'], ['ORL', 'OR L']],
-               model.formattedOptions(1))
-})
-
-test('quotation', () => {
-  let model = new Anaquote('HEL LOW ORL D', '5 5!')
-  assert.equal('????? ????D!', model.quotation())
-  model.select(0, 'HEL')
-  model.select(1, 'LOW')
-  model.select(2, 'ORL')
-  assert.equal('HELLO WORLD!', model.quotation())
-})
-
 test('word', () => {
   let model = new Anaquote('GOO DBY E', '4 3!')
   assert.equal('????', model.word(0))
@@ -335,10 +307,38 @@ test('wordOptions includes current word even if not in the wordSet', () => {
   assert.equal(['?????', 'HELLO', 'HELOR'], model.wordOptions(0))
 })
 
+test('fillInBlank', () => {
+  assert.equal('HEL', Anaquote.fillInBlank('___', 'HEL'))
+  assert.equal('D??', Anaquote.fillInBlank('___', 'D'))
+  assert.equal('LO W', Anaquote.fillInBlank('__ _', 'LOW'))
+  assert.equal('D? ?', Anaquote.fillInBlank('__ _', 'D'))
+  assert.equal('D!', Anaquote.fillInBlank('_!', 'D'))
+  assert.equal('H!', Anaquote.fillInBlank('_!', 'HEL'))
+})
+
+test('formatOptions', () => {
+  assert.equal([['HEL', 'HE L'], ['D', 'D? ?']], Anaquote.formatOptions(['HEL', 'D'], '__ _'))
+})
+
+test('formattedOptions', () => {
+  let model = new Anaquote('HEL LOW ORL D', '5 5!')
+  assert.equal([['???', '?? ?'], ['HEL', 'HE L'], ['LOW', 'LO W'], ['ORL', 'OR L']],
+               model.formattedOptions(1))
+})
+
 test('formattedWordOptions', () => {
   let model = new Anaquote('GOO DBY E', '4 3!', new Set(['GOOD', 'DBYG', 'OOE', 'BYE']))
   assert.equal([['????', '???? '], ['GOOD', 'GOOD '], ['DBYG', 'DBYG ']], model.formattedWordOptions(0))
   assert.equal([['??E', '??E!'], ['OOE', 'OOE!'], ['BYE', 'BYE!']], model.formattedWordOptions(1))
+})
+
+test('quotation', () => {
+  let model = new Anaquote('HEL LOW ORL D', '5 5!')
+  assert.equal('????? ????D!', model.quotation())
+  model.select(0, 'HEL')
+  model.select(1, 'LOW')
+  model.select(2, 'ORL')
+  assert.equal('HELLO WORLD!', model.quotation())
 })
 
 suite('SelectionView')

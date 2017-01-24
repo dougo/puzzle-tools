@@ -76,6 +76,7 @@ class Anaquote {
     this.wordSet = wordSet
     this.letters = this.trigrams.map(t => t.length === 3 ? '???' : t).join('')
   }
+
   get selections () {
     return this.letters.match(/..?.?/g)
   }
@@ -105,19 +106,7 @@ class Anaquote {
     let blank = this.isSelected(i) ? '???' : selection
     return [blank, ...this.available(i)].uniq()
   }
-  static fillInBlank(blank, fill) {
-    let letters = (fill + '???').split('')
-    return blank.split('').map(b => b === '_' ? letters.shift() : b).join('')
-  }
-  static formatOptions(options, blank) {
-    return options.map(o => [o, this.fillInBlank(blank, o)])
-  }
-  formattedOptions(i) {
-    return this.constructor.formatOptions(this.options(i), this.enumeration.blanks[i])
-  }
-  quotation() {
-    return this.constructor.fillInBlank(this.enumeration.blankString, this.letters)
-  }
+
   get words () {
     return this.enumeration.words(this.letters)
   }
@@ -171,8 +160,22 @@ class Anaquote {
     let blank = word.includes('?') ? word : '?'.repeat(word.length)
     return [blank, ...words, word].uniq()
   }
+
+  static fillInBlank(blank, fill) {
+    let letters = (fill + '???').split('')
+    return blank.split('').map(b => b === '_' ? letters.shift() : b).join('')
+  }
+  static formatOptions(options, blank) {
+    return options.map(o => [o, this.fillInBlank(blank, o)])
+  }
+  formattedOptions(i) {
+    return this.constructor.formatOptions(this.options(i), this.enumeration.blanks[i])
+  }
   formattedWordOptions(i) {
     return this.constructor.formatOptions(this.wordOptions(i), this.enumeration.wordBlanks[i])
+  }
+  quotation() {
+    return this.constructor.fillInBlank(this.enumeration.blankString, this.letters)
   }
 }
 

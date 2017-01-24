@@ -15,9 +15,16 @@ Array.prototype.sum = function () {
 Array.prototype.uniq = function () {
   return [...new Set(this)]
 }
+Array.prototype.flatMap = function (f) {
+  return [].concat(...this.map(f))
+}
 
 String.prototype.replaceAt = function(i, str) {
   return this.slice(0, i) + str + this.slice(i + str.length)
+}
+
+Number.prototype.upTo = function (n) {
+  return n < this ? [] : Array.from(Array(n - this + 1), (_, i) => this + i)
 }
 
 class Enumeration {
@@ -52,6 +59,13 @@ class Enumeration {
   }
   words(letters) {
     return this.wordLengths.map((len, i) => this.word(i, letters))
+  }
+  trigramRangeForWord(i) {
+    let start = this.wordStarts[i]
+    let len = this.wordLengths[i]
+    let startTrigram = Math.floor(start / 3)
+    let endTrigram = Math.floor((start + len - 1) / 3)
+    return startTrigram.upTo(endTrigram)
   }
 }
 
@@ -113,25 +127,47 @@ class Anaquote {
   selectWord(i, word) {
     this.letters = this.letters.replaceAt(this.enumeration.wordStart(i), word)
   }
-  selectionPermutations(start, end, selected = []) {
-    if (start > end) return [[]]
-    let startOptions = this.isSelected(start) ? [this.selection(start)] : this.available(start).subtract(selected)
-    let nextPermSets = startOptions.map(t => {
-      let nextPerms = this.selectionPermutations(start + 1, end, [t, ...selected])
-      return nextPerms.map(p => [t, ...p])
+  // TODO: move this to Array? maybe named productWithoutRepeats or something??
+  static permuteOptions(optionArrays, selections = []) {
+    if (optionArrays.length === 0) return [[]]
+    let options = optionArrays[0].subtract(selections)
+    let restOptionArrays = optionArrays.slice(1)
+    return options.flatMap(selection => {
+      let newSelections = [selection, ...selections]
+      let permutations = this.permuteOptions(restOptionArrays, newSelections)
+      return permutations.map(permutation => [selection, ...permutation])
     })
-    return [].concat(...nextPermSets)
+  }
+  optionArraysForWord(i) {
+    let word = this.word(i)
+    let fullySelected = !word.includes('?')
+    let range = this.enumeration.trigramRangeForWord(i)
+    let selections = this.selections
+    if (fullySelected) {
+      // Act as if the word is unselected, to include all alternative word candidates.
+      // But don't unselect the runt (the final non-trigram), if it's part of this word.
+      let lastWord = i === this.words.length - 1
+      let runtLength = this.letters.length % 3
+      let blank = '?'.repeat(lastWord ? word.length - runtLength : word.length)
+      let letters = this.letters.replaceAt(this.enumeration.wordStart(i), blank)
+      selections = letters.match(/..?.?/g)
+    }
+    let availableTrigrams = this.trigrams.subtract(selections)
+    return range.map(i => {
+      let selection = selections[i]
+      if (!selection.includes('?')) return [selection]
+      let regexp = new RegExp(selection.replace(/\?/g, '.'))
+      return availableTrigrams.filter(t => regexp.test(t))
+    })
+  }
+  wordCandidates(i) {
+    let offset = this.enumeration.wordStart(i) % 3
+    let len = this.word(i).length
+    return this.constructor.permuteOptions(this.optionArraysForWord(i)).map(p => p.join('').substr(offset, len))
   }
   wordOptions(i) {
     let word = this.word(i)
-    let start = this.enumeration.wordStart(i)
-    let len = word.length
-    let startTrigram = Math.floor(start / 3)
-    let endTrigram = Math.floor((start + len) / 3)  // TODO: should be start+len-1?
-    let perms = this.selectionPermutations(startTrigram, endTrigram)
-    let offset = start % 3
-    let words = perms.map(p => p.join('').substr(offset, len))
-    words = words.filter(w => this.wordSet.has(w))
+    let words = this.wordCandidates(i).filter(w => this.wordSet.has(w))
     let blank = word.includes('?') ? word : '?'.repeat(word.length)
     return [blank, ...words, word].uniq()
   }

@@ -24,6 +24,10 @@ test('uniq', () => {
   assert.equal([1, 2, 3], [1, 2, 3, 1].uniq())
   assert.equal([1, 2, 3], [1, 2, 3].uniq())
 })
+test('flatMap', () => {
+  assert.equal([2, 3, 4], [1, 2, 3].flatMap(x => x + 1))
+  assert.equal([2, 3, 3, 4, 4, 5], [1, 2, 3].flatMap(x => [x + 1, x + 2]))
+})
 
 suite('String utils')
 
@@ -32,6 +36,13 @@ test('replaceAt', () => {
   assert.equal('YELLO', string.replaceAt(0, 'Y'))
   assert.equal('HEXXO', string.replaceAt(2, 'XX'))
   assert.equal('HELLZZ', string.replaceAt(4, 'ZZ'))
+})
+
+suite('Number utils')
+
+test('upTo', () => {
+  assert.equal([1, 2, 3], (1).upTo(3))
+  assert.equal([], (3).upTo(1))
 })
 
 suite('Enumeration')
@@ -60,6 +71,15 @@ test('words', () => {
 test('word', () => {
   assert.equal('HELLO', new Enumeration('5, 5!').word(0, 'HELLOWORLD'))
   assert.equal('WORLD', new Enumeration('5, 5!').word(1, 'HELLOWORLD'))
+})
+
+test('trigramRangeForWord', () => {
+  assert.equal([0], new Enumeration('3').trigramRangeForWord(0))
+  assert.equal([1], new Enumeration('3 3').trigramRangeForWord(1))
+  assert.equal([0, 1], new Enumeration('6').trigramRangeForWord(0))
+  assert.equal([0, 1, 2], new Enumeration('7').trigramRangeForWord(0))
+  assert.equal([1, 2], new Enumeration('3 5').trigramRangeForWord(1))
+  assert.equal([0, 1, 2], new Enumeration('2 5').trigramRangeForWord(1))
 })
 
 test('blankString', () => {
@@ -224,37 +244,95 @@ test('selectWord', () => {
   assert.equal('DGR', model.selection(3))
 })
 
-test('selectionPermutations', () => {
-  let model = new Anaquote('HEL LOW ORL D')
-  assert.equal([[]], model.selectionPermutations(1, 0))
-  assert.equal([['HEL'], ['LOW'], ['ORL']], model.selectionPermutations(0, 0))
-  assert.equal([['HEL', 'LOW'], ['HEL', 'ORL'],
-                ['LOW', 'HEL'], ['LOW', 'ORL'],
-                ['ORL', 'HEL'], ['ORL', 'LOW']], model.selectionPermutations(0, 1))
-
-  model.select(0, 'HEL')
-  assert.equal([['HEL']], model.selectionPermutations(0, 0))
-  assert.equal([['LOW'], ['ORL']], model.selectionPermutations(1, 1))
-  assert.equal([['HEL', 'LOW'], ['HEL', 'ORL']], model.selectionPermutations(0, 1))
-
-  model.select(1, 'LO?')
-  assert.equal([['LOW']], model.selectionPermutations(1, 1))
+test('permuteOptions', () => {
+  assert.equal([[]], Anaquote.permuteOptions([]))
+  assert.equal([[1], [2]], Anaquote.permuteOptions([[1,2]]))
+  assert.equal([[1,2], [2,1]], Anaquote.permuteOptions([[1,2], [1,2]]))
+  assert.equal([[1,2,3], [1,2,4], [1,3,4],
+                [2,3,1], [2,3,4],
+                [3,2,1], [3,2,4],
+                [4,2,1], [4,2,3], [4,3,1]], Anaquote.permuteOptions([[1,2,3,4], [2,3], [1,3,4]]))
 })
 
-test('wordOptions', () => {
-  let model = new Anaquote('HEL LOW ORL D', '5 5!')
-  assert.equal(['?????'], model.wordOptions(0))
-  assert.equal(['????D'], model.wordOptions(1))
+test('optionArraysForWord includes trigrams for each slot in word range', () => {
+  let model = new Anaquote('LAY OFF OUT SET', '6 6')
+  assert.equal([['LAY', 'OFF', 'OUT', 'SET'], ['LAY', 'OFF', 'OUT', 'SET']], model.optionArraysForWord(0))
+})
 
-  model = new Anaquote('HEL LOW ORL D', '5 5!', new Set(['HELLO', 'HELOR', 'WORLD', 'LLOWD']))
-  assert.equal(['?????', 'HELLO', 'HELOR'], model.wordOptions(0))
-  assert.equal(['????D', 'LLOWD', 'WORLD'], model.wordOptions(1))
+test('optionArraysForWord excludes trigrams selected elsewhere', () => {
+  let model = new Anaquote('LAY OFF OUT SET', '6 6')
+  model.select(2, 'LAY')
+  assert.equal([['OFF', 'OUT', 'SET'], ['OFF', 'OUT', 'SET']], model.optionArraysForWord(0))
+})
+
+test('optionArraysForWord only includes selected trigrams in word range', () => {
+  let model = new Anaquote('LAY OFF OUT SET', '6 6')
+  model.select(0, 'LAY')
+  assert.equal([['LAY'], ['OFF', 'OUT', 'SET']], model.optionArraysForWord(0))
+})
+
+test('optionArraysForWord filters partially-selected trigrams', () => {
+  let model = new Anaquote('AGL ADG IRL', '1 4 4')
+  model.selectWord(0, 'A')
+  assert.equal([['AGL', 'ADG'], ['AGL', 'ADG', 'IRL']], model.optionArraysForWord(1))
+})
+
+test('optionArraysForWord includes all unselected-elsewhere trigrams when word is fully selected', () => {
+  let model = new Anaquote('LAY OFF OUT SET', '6 6')
+  model.selectWord(0, 'LAYOFF')
+  model.select(2, 'OUT')
+  assert.equal([['LAY', 'OFF', 'SET'], ['LAY', 'OFF', 'SET']], model.optionArraysForWord(0))
+})
+
+test('optionArraysForWord includes the runt even when word is fully selected', () => {
+  let model = new Anaquote('FUN WAR D', '3 4')
+  model.selectWord(1, 'WARD')
+  assert.equal([['FUN', 'WAR'], ['D']], model.optionArraysForWord(1))
+})
+
+test('optionArraysForWord filters partially-selected trigrams even when word is fully selected', () => {
+  let model = new Anaquote('AGL ADG IRL', '1 4 4')
+  model.selectWord(0, 'A')
+  model.selectWord(1, 'GLAD')
+  assert.equal([['AGL', 'ADG'], ['AGL', 'ADG', 'IRL']], model.optionArraysForWord(1))
+})
+
+test('wordCandidates permutes options and forms words', () => {
+  let model = new Anaquote('LAY OFF OUT SET', '6 6')
+  model.selectWord(0, 'LAYOFF')
+  model.select(2, 'OUT')
+  assert.equal(['LAYOFF', 'LAYSET', 'OFFLAY', 'OFFSET', 'SETLAY', 'SETOFF'], model.wordCandidates(0))
+})
+
+test('wordCandidates selects the proper substrings', () => {
+  let model = new Anaquote('IDI DIT', '1 3 2!')
+  assert.equal(['DID', 'ITI'], model.wordCandidates(1))
+})
+
+test('wordOptions filters through wordSet and includes a blank', () => {
+  let words = ['LAYOFF', 'LAYOUT', 'OFFSET', 'OUTLAY', 'OUTSET', 'SETOFF', 'SETOUT']
+  let model = new Anaquote('LAY OFF OUT SET', '6 6', new Set(words))
+  assert.equal(['??????', ...words], model.wordOptions(0))
+})
+
+test('wordOptions blank matches partially selected word', () => {
+  model = new Anaquote('HEL LOW ORL D', '5 5!', new Set(['HELLO', 'HELOR', 'WORLD', 'WHELD', 'LLOWD']))
   model.select(1, 'LOW')
-  assert.equal(['W???D', 'WORLD'], model.wordOptions(1))
-  model.select(2, 'ORL')
-  assert.equal(['?????', 'WORLD'], model.wordOptions(1))
-  model.select(2, 'HEL')
-  assert.equal(['?????', 'WHELD'], model.wordOptions(1))
+  assert.equal(['???LO', 'HELLO'], model.wordOptions(0))
+  assert.equal(['W???D', 'WHELD', 'WORLD'], model.wordOptions(1))
+})
+
+test('wordOptions blank is empty when a word is fully selected', () => {
+  let model = new Anaquote('HEL LOW ORL D', '5 5!', new Set(['HELLO', 'HELOR', 'WORLD', 'WHELD', 'LLOWD']))
+  model.selectWord(1, 'WORLD')
+  // TODO: blank should be '????D'
+  assert.equal(['?????', 'LLOWD', 'WHELD', 'WORLD'], model.wordOptions(1))
+})
+
+test('wordOptions includes current word even if not in the wordSet', () => {
+  let model = new Anaquote('HEL LOW ORL D', '5 5!', new Set(['HELLO']))
+  model.selectWord(0, 'HELOR')
+  assert.equal(['?????', 'HELLO', 'HELOR'], model.wordOptions(0))
 })
 
 test('formattedWordOptions', () => {
@@ -268,7 +346,7 @@ suite('SelectionView')
 class TestSelectionView extends SelectionView {
   modelOptions(i) { return [['?', '?'], [`${i}`, `${i},  `]] }
   modelValue(i) { return this.value || `${i}` }
-  modelSelect(i, value) { console.log(`modelSelect(${i}, ${value})`); this.value = value }
+  modelSelect(i, value) { this.value = value }
 }
 
 test('constructor', () => {

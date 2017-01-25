@@ -32,7 +32,7 @@ Object.defineProperty(Number.prototype, 'times', {
 
 class Enumeration {
   constructor (enumeration) {
-    this.tokens = enumeration.split(/(\d+)/).map(token => {
+    this.tokens = enumeration.trim().split(/(\d+)/).map(token => {
       let len = Number.parseInt(token)
       return isNaN(len) ? token : len
     }).filter(s => s !== '')
@@ -82,7 +82,7 @@ class Enumeration {
 
 class Anaquote {
   constructor (trigrams, enumeration = '', wordSet = new Set()) {
-    this.trigrams = trigrams.toUpperCase().split(' ').sort((a, b) => {
+    this.trigrams = trigrams.trim().toUpperCase().split(/\s+/).sort((a, b) => {
       if (a.length !== b.length) return b.length - a.length // put non-trigram at the end
       return a.localeCompare(b)
     })

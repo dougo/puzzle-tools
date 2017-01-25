@@ -54,6 +54,7 @@ suite('Enumeration')
 test('tokens', () => {
   assert.equal([3], new Enumeration('3').tokens)
   assert.equal([5, ', ', 5, '!'], new Enumeration('5, 5!').tokens)
+  assert.equal([5, ',  ', 5, '!'], new Enumeration('  5,  5! ').tokens)
 })
 
 test('wordLength', () => {
@@ -104,14 +105,14 @@ test('blankString', () => {
 test('blanks', () => {
   assert.equal(['___'], new Enumeration('3').blanks)
   assert.equal(['___', '__'], new Enumeration('5').blanks)
-  assert.equal([' ___', '__'], new Enumeration(' 5').blanks)
+  assert.equal(['*___', '__'], new Enumeration('*5').blanks)
   assert.equal(['___', '__, _', '___', '_!'], new Enumeration('5, 5!').blanks)
   assert.equal(['___!'], new Enumeration('3!').blanks)
 })
 
 test('wordBlanks', () => {
   assert.equal(['_____'], new Enumeration('5').wordBlanks)
-  assert.equal([' _____'], new Enumeration(' 5').wordBlanks)
+  assert.equal(['*_____'], new Enumeration('*5').wordBlanks)
   assert.equal(['_____, ', '_____!'], new Enumeration('5, 5!').wordBlanks)
   assert.equal(["_ ", "___'_ ", "*____*."], new Enumeration("1 3'1 *4*.").wordBlanks)
   assert.equal(['HELLO, _____!'], new Enumeration('HELLO, 5!').wordBlanks)
@@ -127,6 +128,9 @@ test('trigrams is uppercase', () => {
 })
 test('trigrams is sorted', () => {
   assert.equal(['DBY', 'GOO', 'E'], new Anaquote('GOO DBY E').trigrams)
+})
+test('trigrams omits extra spaces', () => {
+  assert.equal(['HEL', 'LOW', 'ORL', 'D'], new Anaquote(' HEL  LOW   ORL D  ').trigrams)
 })
 
 test('enumeration', () => {

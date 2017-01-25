@@ -192,10 +192,15 @@ test('options', () => {
   let model = new Anaquote('HEL LOW ORL D')
   assert.equal(['???', 'HEL', 'LOW', 'ORL'], model.options(0))
   assert.equal(['D'], model.options(3))
+})
 
+test('options includes unselection and partial selection when trigram is partially selected', () => {
+  let model = new Anaquote('HEL LOW ORL D')
   model.select(0, 'L??')
-  assert.equal(['L??', 'LOW'], model.options(0))
+  assert.equal(['???', 'L??', 'LOW'], model.options(0))
+})
 
+test('options omits duplicates', () => {
   model = new Anaquote('TSE TSE FLY')
   assert.equal(['???', 'TSE', 'FLY'], model.options(0))
 })
@@ -213,9 +218,11 @@ test('selectWord', () => {
 })
 
 test('unselectedWordOption', () => {
-  let model = new Anaquote('HEL LOW ORL D', '5 5')
-  assert.equal('?????', model.unselectedWordOption(0))
-  assert.equal('????D', model.unselectedWordOption(1))
+  assert.equal('??????', new Anaquote('SEL VES', '6').unselectedWordOption(0))
+})
+
+test('unselectedWordOption includes the runt', () => {
+  assert.equal('????D', new Anaquote('HEL LOW ORL D', '5 5').unselectedWordOption(1))
 })
 
 test('permuteOptions', () => {
@@ -283,7 +290,7 @@ test('wordCandidates selects the proper substrings', () => {
   assert.equal(['DID', 'ITI'], model.wordCandidates(1))
 })
 
-test('wordOptions filters through wordSet and includes a blank', () => {
+test('wordOptions filters through wordSet and includes an unselection option', () => {
   let words = ['LAYOFF', 'LAYOUT', 'OFFSET', 'OUTLAY', 'OUTSET', 'SETOFF', 'SETOUT']
   let model = new Anaquote('LAY OFF OUT SET', '6 6', new Set(words))
   assert.equal(['??????', ...words], model.wordOptions(0))
@@ -292,8 +299,8 @@ test('wordOptions filters through wordSet and includes a blank', () => {
 test('wordOptions includes partially selected word', () => {
   model = new Anaquote('HEL LOW ORL D', '5 5!', new Set(['HELLO', 'HELOR', 'WORLD', 'WHELD', 'LLOWD']))
   model.select(1, 'LOW')
-  assert.equal(['???LO', 'HELLO'], model.wordOptions(0))
-  assert.equal(['W???D', 'WHELD', 'WORLD'], model.wordOptions(1))
+  assert.equal(['?????', '???LO', 'HELLO'], model.wordOptions(0))
+  assert.equal(['????D', 'W???D', 'WHELD', 'WORLD'], model.wordOptions(1))
 })
 
 test('wordOptions includes an unselection option when a word is fully selected', () => {

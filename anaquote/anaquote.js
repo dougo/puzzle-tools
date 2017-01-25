@@ -111,8 +111,9 @@ class Anaquote {
   options(i) {
     let selection = this.selection(i)
     if (selection.length < 3) return [selection]
-    let blank = this.isSelected(i) ? '???' : selection
-    return [blank, ...this.available(i)].uniq()
+    let opts = this.available(i)
+    if (selection.includes('?')) opts.unshift(selection)
+    return ['???', ...opts].uniq()
   }
 
   get words () {
@@ -129,7 +130,7 @@ class Anaquote {
     if (i === this.enumeration.numWords - 1) {
       // Don't unselect the runt (the final non-trigram).
       let runtLength = this.letters.length % 3
-      let runt = this.letters.slice(-runtLength)
+      let runt = this.letters.substr(-runtLength, runtLength)
       return '?'.repeat(len - runtLength) + runt
     }
     return '?'.repeat(len)
@@ -171,8 +172,8 @@ class Anaquote {
   wordOptions(i) {
     let words = this.wordCandidates(i).filter(w => this.wordSet.has(w))
     let word = this.word(i)
-    let blank = word.includes('?') ? word : this.unselectedWordOption(i)
-    return [blank, ...words, word].uniq()
+    if (word.includes('?')) words.unshift(word)
+    return [this.unselectedWordOption(i), ...words, word].uniq()
   }
 
   static fillInBlank(blank, fill) {

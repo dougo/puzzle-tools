@@ -321,6 +321,15 @@ test('wordOptions includes current word even if not in the wordSet', () => {
   assert.equal(['?????', 'HELLO', 'HELOR'], model.wordOptions(0))
 })
 
+test('wordOptions includes apostrophes, hyphens, and slashes when looking up words', () => {
+  let wordSet = new Set(['AND/OR', "CAN'T", 'CATCH-22', "L'OEIL", 'RANT'])
+  let model = new Anaquote('CAT CH2 2AN DOR LOE ILC ANT', "5-2 (3/2) 1'4 3’1", wordSet)
+  assert.equal(['???????', 'CATCH22'],  model.wordOptions(0))
+  assert.equal(['?????', 'ANDOR'],  model.wordOptions(1))
+  assert.equal(['?????', 'LOEIL',],  model.wordOptions(2))
+  assert.equal(['????', 'CANT'],  model.wordOptions(3))
+})
+
 test('fillInBlank', () => {
   assert.equal('HEL', Anaquote.fillInBlank('___', 'HEL'))
   assert.equal('D??', Anaquote.fillInBlank('___', 'D'))

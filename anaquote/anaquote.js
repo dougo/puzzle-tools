@@ -173,7 +173,12 @@ class Anaquote {
     return this.constructor.permuteOptions(this.optionArraysForWord(i)).map(p => p.join('').substr(offset, len))
   }
   wordOptions(i) {
-    let words = this.wordCandidates(i).filter(w => this.wordSet.has(w))
+    let words = this.wordCandidates(i).filter(w => {
+      w = this.constructor.fillInBlank(this.enumeration.wordBlanks[i], w)
+      w = w.replace(/’/g, "'") // Allow smart-apostrophe, but our word list only has ASCII apostrophe.
+      w = w.replace(/[^-\/'A-Z0-9]/g, '')
+      return this.wordSet.has(w)
+    })
     let word = this.word(i)
     if (word.includes('?')) words.unshift(word)
     return [this.unselectedWordOption(i), ...words, word].uniq()

@@ -60,17 +60,21 @@ test('wordLength', () => {
   assert.equal(3, new Enumeration('3').wordLength(0))
   assert.equal(5, new Enumeration('5, 6!').wordLength(0))
   assert.equal(6, new Enumeration('5, 6!').wordLength(1))
+  assert.equal(4, new Enumeration("1 3'1 4.").wordLength(1))
 })
 
 test('wordStart', () => {
   assert.equal(0, new Enumeration('5, 6!').wordStart(0))
   assert.equal(5, new Enumeration('5, 6!').wordStart(1))
   assert.equal(8, new Enumeration('5, 3, 6!').wordStart(2))
+  assert.equal(5, new Enumeration("1 3'1 4.").wordStart(2))
 })
 
 test('numWords', () => {
   assert.equal(1, new Enumeration('3').numWords)
   assert.equal(2, new Enumeration('5, 5!').numWords)
+  assert.equal(3, new Enumeration("1 3'1 4.").numWords)
+  assert.equal(1, new Enumeration('HELLO, 5!').numWords)
 })
 
 test('words', () => {
@@ -109,6 +113,8 @@ test('wordBlanks', () => {
   assert.equal(['_____'], new Enumeration('5').wordBlanks)
   assert.equal([' _____'], new Enumeration(' 5').wordBlanks)
   assert.equal(['_____, ', '_____!'], new Enumeration('5, 5!').wordBlanks)
+  assert.equal(["_ ", "___'_ ", "*____*."], new Enumeration("1 3'1 *4*.").wordBlanks)
+  assert.equal(['HELLO, _____!'], new Enumeration('HELLO, 5!').wordBlanks)
 })
 
 suite('Anaquote')

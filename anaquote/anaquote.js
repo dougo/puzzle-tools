@@ -37,7 +37,10 @@ class Enumeration {
       return isNaN(len) ? token : len
     }).filter(s => s !== '')
 
-    this.wordLengths = this.tokens.filter(t => typeof t === 'number')
+    this.wordLengths = enumeration.split(/\s+/).map(wordPattern => {
+      let lengths = wordPattern.match(/\d+/g)
+      return lengths === null ? false : lengths.map(s => Number.parseInt(s)).sum()
+    }).filter(l => l)
 
     this.numWords = this.wordLengths.length
 
@@ -54,7 +57,7 @@ class Enumeration {
 
     this.blanks = this.blankString.match(/[^_]*_[^_]*_?[^_]*_?[^_]*/g)
 
-    this.wordBlanks = this.blankString.match(/[^_]*_+[^_]*/g)
+    this.wordBlanks = this.blankString.match(/[^_]*_+[^\s]*\s*/g)
   }
   wordLength(i) {
     return this.wordLengths[i]

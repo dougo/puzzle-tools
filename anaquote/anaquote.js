@@ -82,7 +82,10 @@ class Enumeration {
 
 class Anaquote {
   constructor (trigrams, enumeration = '', wordSet = new Set()) {
-    this.trigrams = trigrams.split(' ')
+    this.trigrams = trigrams.toUpperCase().split(' ').sort((a, b) => {
+      if (a.length !== b.length) return b.length - a.length // put non-trigram at the end
+      return a.localeCompare(b)
+    })
     this.enumeration = new Enumeration(enumeration)
     this.wordSet = wordSet
     this.letters = this.trigrams.map(t => t.length === 3 ? '???' : t).join('')
@@ -181,7 +184,7 @@ class Anaquote {
     })
     let word = this.word(i)
     if (word.includes('?')) words.unshift(word)
-    return [this.unselectedWordOption(i), ...words, word].uniq()
+    return [this.unselectedWordOption(i), ...words, word].uniq().sort()
   }
 
   static fillInBlank(blank, fill) {

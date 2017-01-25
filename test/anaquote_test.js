@@ -119,8 +119,14 @@ test('wordBlanks', () => {
 
 suite('Anaquote')
 
-test('trigrams', () => {
+test('trigrams is an array', () => {
   assert.equal(['HEL', 'LOW', 'ORL', 'D'], new Anaquote('HEL LOW ORL D').trigrams)
+})
+test('trigrams is uppercase', () => {
+  assert.equal(['HEL', 'LOW', 'ORL', 'D'], new Anaquote('hel low orl d').trigrams)
+})
+test('trigrams is sorted', () => {
+  assert.equal(['DBY', 'GOO', 'E'], new Anaquote('GOO DBY E').trigrams)
 })
 
 test('enumeration', () => {
@@ -178,18 +184,26 @@ test('available', () => {
   let model = new Anaquote('HEL LOW ORL D')
   assert.equal(['HEL', 'LOW', 'ORL'], model.available(0))
   assert.equal(['D'], model.available(3))
+})
 
+test('available includes selected', () => {
+  let model = new Anaquote('HEL LOW ORL D')
   model.select(0, 'LOW')
   assert.equal(['HEL', 'LOW', 'ORL'], model.available(0))
   assert.equal(['HEL', 'ORL'], model.available(1))
+})
 
+test('available filters if partially selected', () => {
+  let model = new Anaquote('HEL LOW ORL D')
   model.select(0, 'L??')
   assert.equal(['LOW'], model.available(0))
+})
 
-  model = new Anaquote('TSE TSE FLY')
-  assert.equal(['TSE', 'TSE', 'FLY'], model.available(2))
+test('available includes duplicates', () => {
+  let model = new Anaquote('FLY TSE TSE')
+  assert.equal(['FLY', 'TSE', 'TSE'], model.available(2))
   model.select(0, 'TSE')
-  assert.equal(['TSE', 'FLY'], model.available(2))
+  assert.equal(['FLY', 'TSE'], model.available(2))
   model.select(1, 'TSE')
   assert.equal(['FLY'], model.available(2))
 })
@@ -207,8 +221,8 @@ test('options includes unselection and partial selection when trigram is partial
 })
 
 test('options omits duplicates', () => {
-  model = new Anaquote('TSE TSE FLY')
-  assert.equal(['???', 'TSE', 'FLY'], model.options(0))
+  model = new Anaquote('FLY TSE TSE')
+  assert.equal(['???', 'FLY', 'TSE'], model.options(0))
 })
 
 test('word', () => {
@@ -259,9 +273,9 @@ test('optionArraysForWord only includes selected trigrams in word range', () => 
 })
 
 test('optionArraysForWord filters partially-selected trigrams', () => {
-  let model = new Anaquote('AGL ADG IRL', '1 4 4')
+  let model = new Anaquote('ADG AGL IRL', '1 4 4')
   model.selectWord(0, 'A')
-  assert.equal([['AGL', 'ADG'], ['AGL', 'ADG', 'IRL']], model.optionArraysForWord(1))
+  assert.equal([['ADG', 'AGL'], ['ADG', 'AGL', 'IRL']], model.optionArraysForWord(1))
 })
 
 test('optionArraysForWord includes all unselected-elsewhere trigrams when word is fully selected', () => {
@@ -278,10 +292,10 @@ test('optionArraysForWord includes the runt even when word is fully selected', (
 })
 
 test('optionArraysForWord filters partially-selected trigrams even when word is fully selected', () => {
-  let model = new Anaquote('AGL ADG IRL', '1 4 4')
+  let model = new Anaquote('ADG AGL IRL', '1 4 4')
   model.selectWord(0, 'A')
   model.selectWord(1, 'GLAD')
-  assert.equal([['AGL', 'ADG'], ['AGL', 'ADG', 'IRL']], model.optionArraysForWord(1))
+  assert.equal([['ADG', 'AGL'], ['ADG', 'AGL', 'IRL']], model.optionArraysForWord(1))
 })
 
 test('wordCandidates permutes options and forms words', () => {
@@ -292,8 +306,8 @@ test('wordCandidates permutes options and forms words', () => {
 })
 
 test('wordCandidates selects the proper substrings', () => {
-  let model = new Anaquote('IDI DIT', '1 3 2!')
-  assert.equal(['DID', 'ITI'], model.wordCandidates(1))
+  let model = new Anaquote('DIT IDI', '1 3 2!')
+  assert.equal(['ITI', 'DID'], model.wordCandidates(1))
 })
 
 test('wordOptions filters through wordSet and includes an unselection option', () => {
@@ -330,6 +344,11 @@ test('wordOptions includes apostrophes, hyphens, and slashes when looking up wor
   assert.equal(['????', 'CANT'],  model.wordOptions(3))
 })
 
+test('wordOptions is sorted', () => {
+  let model = new Anaquote('AST IFE', '1 5', new Set(['A', 'FEAST', 'I', 'STIFE']))
+  assert.equal(['?????', 'FEAST', 'STIFE'], model.wordOptions(1))
+})
+
 test('fillInBlank', () => {
   assert.equal('HEL', Anaquote.fillInBlank('___', 'HEL'))
   assert.equal('D??', Anaquote.fillInBlank('___', 'D'))
@@ -351,8 +370,8 @@ test('formattedOptions', () => {
 
 test('formattedWordOptions', () => {
   let model = new Anaquote('GOO DBY E', '4 3!', new Set(['GOOD', 'DBYG', 'OOE', 'BYE']))
-  assert.equal([['????', '???? '], ['GOOD', 'GOOD '], ['DBYG', 'DBYG ']], model.formattedWordOptions(0))
-  assert.equal([['??E', '??E!'], ['OOE', 'OOE!'], ['BYE', 'BYE!']], model.formattedWordOptions(1))
+  assert.equal([['????', '???? '], ['DBYG', 'DBYG '], ['GOOD', 'GOOD ']], model.formattedWordOptions(0))
+  assert.equal([['??E', '??E!'], ['BYE', 'BYE!'], ['OOE', 'OOE!']], model.formattedWordOptions(1))
 })
 
 test('quotation', () => {

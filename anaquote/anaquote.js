@@ -84,11 +84,22 @@ class Enumeration {
 
 class Anaquote {
   constructor (trigrams, enumeration, wordSet = new Set()) {
-    this.trigrams = trigrams.trim().toUpperCase().split(/\s+/).sort((a, b) => {
-      if (a.length !== b.length) return b.length - a.length // put non-trigram at the end
+    this.trigrams = trigrams.trim().toUpperCase().split(/\s+/)
+
+    let leftover
+    this.trigrams.forEach(t => {
+      if (t.length > 3) throw new Error('Not a trigram: ' + t)
+      else if (t.length < 3) {
+        if (leftover) throw new Error(`More than one leftover: ${leftover} ${t}`)
+        leftover = t
+      }
+    })
+
+    this.trigrams = this.trigrams.sort((a, b) => {
+      if (a.length !== b.length) return b.length - a.length // put leftover at the end
       return a.localeCompare(b)
     })
-    this.wordSet = wordSet
+
     this.letters = this.trigrams.map(t => t.length === 3 ? '???' : t).join('')
 
     if (enumeration) {
@@ -99,6 +110,8 @@ class Anaquote {
       else if (total < this.letters.length)
         throw new Error('Enumeration is too short!')
     }
+
+    this.wordSet = wordSet
   }
 
   get selections () {
@@ -144,10 +157,10 @@ class Anaquote {
   unselectedWordOption(i) {
     let len = this.enumeration.wordLength(i)
     if (i === this.enumeration.numWords - 1) {
-      // Don't unselect the runt (the final non-trigram).
-      let runtLength = this.letters.length % 3
-      let runt = this.letters.substr(-runtLength, runtLength)
-      return '?'.repeat(len - runtLength) + runt
+      // Don't unselect the leftover (the final non-trigram).
+      let leftoverLength = this.letters.length % 3
+      let leftover = this.letters.substr(-leftoverLength, leftoverLength)
+      return '?'.repeat(len - leftoverLength) + leftover
     }
     return '?'.repeat(len)
   }

@@ -131,6 +131,14 @@ test('error if total length of trigrams differs from enumeration', () => {
   ex = assert.throws(Error, () => new Anaquote('HEL LOW ORL D', '5, 4!'))
   assert.equal('Enumeration is too short!', ex.message)
 })
+test('error if trigrams are longer than 3', () => {
+  let ex = assert.throws(Error, () => new Anaquote('HEL LOW ORLD'))
+  assert.equal('Not a trigram: ORLD', ex.message)
+})
+test('error if more than one leftover', () => {
+  let ex = assert.throws(Error, () => new Anaquote('HEL LOW OR LD'))
+  assert.equal('More than one leftover: OR LD', ex.message)
+})
 
 test('trigrams is an array', () => {
   assert.equal(['HEL', 'LOW', 'ORL', 'D'], new Anaquote('HEL LOW ORL D').trigrams)
@@ -257,7 +265,7 @@ test('unselectedWordOption', () => {
   assert.equal('??????', new Anaquote('SEL VES', '6').unselectedWordOption(0))
 })
 
-test('unselectedWordOption includes the runt', () => {
+test('unselectedWordOption includes the leftover', () => {
   assert.equal('????D', new Anaquote('HEL LOW ORL D', '5 5').unselectedWordOption(1))
 })
 
@@ -301,7 +309,7 @@ test('optionArraysForWord includes all unselected-elsewhere trigrams when word i
   assert.equal([['LAY', 'OFF', 'SET'], ['LAY', 'OFF', 'SET']], model.optionArraysForWord(0))
 })
 
-test('optionArraysForWord includes the runt even when word is fully selected', () => {
+test('optionArraysForWord includes the leftover even when word is fully selected', () => {
   let model = new Anaquote('FUN WAR D', '3 4')
   model.selectWord(1, 'WARD')
   assert.equal([['FUN', 'WAR'], ['D']], model.optionArraysForWord(1))

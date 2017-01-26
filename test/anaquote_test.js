@@ -558,7 +558,7 @@ suite('InputView')
 test('constructor', () => {
   jsdom.changeURL(window, 'http://example.com/?trigrams=HEL+LOW+ORL+D&enumeration=5+5!')
   let view = new InputView()
-  assert.is('div', view.$el)
+  assert.is('form', view.$el)
   let $children = view.$el.children('div')
   assert.equal(3, $children.length)
   assert.has(view.$trigrams, $children.eq(0))
@@ -576,6 +576,7 @@ test('constructor', () => {
   assert.hasValue('5 5!', view.$enumeration)
 
   assert.is('button', view.$start)
+  assert.hasAttr('type', 'submit', view.$start)
   assert.hasText('Start', view.$start)
 })
 
@@ -630,6 +631,17 @@ test('clicking Start removes the old AnaquoteView first', () => {
   view.input.$enumeration.val('4 3!')
   view.input.$start.click()
   assert.equal(2, view.$el.children().length)
+})
+
+test('submit form causes blur', () => {
+  let view = new ApplicationView($('<div>'))
+  view.input.$trigrams.val('HEL LOW ORL D')
+  view.input.$enumeration.val('5 5!')
+  view.input.$enumeration.focus()
+  assert(document.hasFocus())
+  view.input.$el.submit()
+  assert.instanceOf(AnaquoteView, view.anaquote)
+  refute(document.hasFocus())
 })
 
 // Can't get this to work :(

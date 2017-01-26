@@ -299,8 +299,8 @@ class InputView {
     this.$enumeration = $('<input>', {
       name: 'enumeration', placeholder: 'Enumeration', size: '100', val: params.get('enumeration')
     })
-    this.$start = $('<button>', { text: 'Start' })
-    this.$el = $('<div>').append(this.$trigrams, this.$enumeration, this.$start)
+    this.$start = $('<button>', { type: 'submit', text: 'Start' })
+    this.$el = $('<form>').append(this.$trigrams, this.$enumeration, this.$start)
     this.$el.children().wrap('<div>') // to stack them vertically
   }
   newAnaquote(wordSet) { return new Anaquote(this.$trigrams.val(), this.$enumeration.val(), wordSet) }
@@ -311,10 +311,12 @@ class ApplicationView {
     this.$el = $el
     this.input = new InputView()
     this.$el.append(this.input.$el)
-    this.input.$start.click(() => {
+    this.input.$el.submit(event => {
       if (this.anaquote) this.anaquote.$el.remove()
       this.anaquote = new AnaquoteView(this.input.newAnaquote(this.words)).render()
       this.$el.append(this.anaquote.$el)
+      $(document.activeElement).blur()
+      event.preventDefault()
     })
   }
   fetchWords() {

@@ -120,6 +120,14 @@ test('wordBlanks', () => {
 
 suite('Anaquote')
 
+test('error if total length of trigrams differs from enumeration', () => {
+  let ex = assert.throws(Error, () => new Anaquote('HEL LOW ORL D', '5, 6!'))
+  assert.equal('Enumeration is too long!', ex.message)
+
+  ex = assert.throws(Error, () => new Anaquote('HEL LOW ORL D', '5, 4!'))
+  assert.equal('Enumeration is too short!', ex.message)
+})
+
 test('trigrams is an array', () => {
   assert.equal(['HEL', 'LOW', 'ORL', 'D'], new Anaquote('HEL LOW ORL D').trigrams)
 })
@@ -575,22 +583,58 @@ test('constructor', () => {
   assert.hasAttr('size', '100', view.$enumeration)
   assert.hasValue('5 5!', view.$enumeration)
 
-  assert.is('button', view.$start)
-  assert.hasAttr('type', 'submit', view.$start)
+  assert.is('button[type=submit]', view.$start)
   assert.hasText('Start', view.$start)
 })
 
-test('newAnaquote', () => {
+test('submitting the form calls the callback with trigrams and enumeration', () => {
+  let trigrams, enumeration
+  let view = new InputView((t, e) => { trigrams = t; enumeration = e })
+  view.$trigrams.val('HEL LOW ORL D')
+  view.$enumeration.val('5 5!')
+  view.$el.submit()
+  assert.equal('HEL LOW ORL D', trigrams)
+  assert.equal('5 5!', enumeration)
+})
+
+test('submit form causes blur', () => {
   let view = new InputView()
   view.$trigrams.val('HEL LOW ORL D')
   view.$enumeration.val('5 5!')
-  let anaquote = view.newAnaquote()
-  assert.instanceOf(Anaquote, anaquote)
-  assert.equal(['HEL', 'LOW', 'ORL', 'D'], anaquote.trigrams)
-  assert.equal([5, ' ', 5, '!'], anaquote.enumeration.tokens)
-  assert.instanceOf(Set, anaquote.wordSet)
-  let wordSet = new Set(['HELLO', 'WORLD'])
-  assert.same(wordSet, view.newAnaquote(wordSet).wordSet)
+  view.$enumeration.focus()
+  assert(document.hasFocus())
+  view.$el.submit()
+  refute(document.hasFocus())
+})
+
+test('error thrown by callback is displayed on the form', () => {
+  let view = new InputView(() => { throw new Error('oops') })
+  view.$enumeration.focus()
+  view.$el.submit()
+  assert(document.hasFocus())
+  assert.hasClass('error', view.$error)
+  assert.hasText('oops', view.$error)
+  let $children = view.$el.children('div')
+  assert.equal(4, $children.length)
+  assert.same(view.$error[0], $children.eq(3)[0])
+})
+
+test('old error is replaced when new one is thrown', () => {
+  let num = 0
+  let view = new InputView(() => { throw new Error(`oops ${num++}`) })
+  view.$el.submit()
+  view.$el.submit()
+  let $children = view.$el.children('div')
+  assert.equal(4, $children.length)
+  assert.hasText('oops 1', $children.eq(3))
+})
+
+test('old error is removed when no error is thrown', () => {
+  let num = 0
+  let view = new InputView(() => { if (num++ === 0) throw new Error('oops') })
+  view.$el.submit()
+  view.$el.submit()
+  assert.equal(3, view.$el.children('div').length)
 })
 
 suite('ApplicationView')
@@ -627,21 +671,8 @@ test('clicking Start removes the old AnaquoteView first', () => {
   view.input.$start.click()
   assert.equal(2, view.$el.children().length)
 
-  view.input.$trigrams.val('GOO DBY E')
-  view.input.$enumeration.val('4 3!')
   view.input.$start.click()
   assert.equal(2, view.$el.children().length)
-})
-
-test('submit form causes blur', () => {
-  let view = new ApplicationView($('<div>'))
-  view.input.$trigrams.val('HEL LOW ORL D')
-  view.input.$enumeration.val('5 5!')
-  view.input.$enumeration.focus()
-  assert(document.hasFocus())
-  view.input.$el.submit()
-  assert.instanceOf(AnaquoteView, view.anaquote)
-  refute(document.hasFocus())
 })
 
 // Can't get this to work :(

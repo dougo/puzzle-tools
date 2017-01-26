@@ -89,6 +89,14 @@ class Anaquote {
     this.enumeration = new Enumeration(enumeration)
     this.wordSet = wordSet
     this.letters = this.trigrams.map(t => t.length === 3 ? '???' : t).join('')
+
+    if (this.enumeration.numWords > 0) {
+      let expectedLength = this.enumeration.wordLengths.sum()
+      if (this.letters.length < expectedLength)
+        throw new Error('Enumeration is too long!')
+      else if (this.letters.length > expectedLength)
+        throw new Error('Enumeration is too short!')
+    }
   }
 
   get selections () {
@@ -291,7 +299,7 @@ class AnaquoteView {
 }
 
 class InputView {
-  constructor () {
+  constructor (callback = () => { }) {
     let params = new URL(location).searchParams
     this.$trigrams = $('<input>', {
       name: 'trigrams', placeholder: 'Trigrams', size: '100', val: params.get('trigrams')
@@ -302,22 +310,29 @@ class InputView {
     this.$start = $('<button>', { type: 'submit', text: 'Start' })
     this.$el = $('<form>').append(this.$trigrams, this.$enumeration, this.$start)
     this.$el.children().wrap('<div>') // to stack them vertically
+    this.$el.submit(event => {
+      event.preventDefault()
+      if (this.$error) this.$error.remove()
+      try { callback(this.$trigrams.val(), this.$enumeration.val()) }
+      catch (e) {
+        this.$error = $('<div>', { class: 'error', text: e.message })
+        this.$el.append(this.$error)
+        return
+      }
+      $(document.activeElement).blur()
+    })
   }
-  newAnaquote(wordSet) { return new Anaquote(this.$trigrams.val(), this.$enumeration.val(), wordSet) }
 }
 
 class ApplicationView {
   constructor ($el) {
     this.$el = $el
-    this.input = new InputView()
-    this.$el.append(this.input.$el)
-    this.input.$el.submit(event => {
+    this.input = new InputView((trigrams, enumeration) => {
       if (this.anaquote) this.anaquote.$el.remove()
-      this.anaquote = new AnaquoteView(this.input.newAnaquote(this.words)).render()
+      this.anaquote = new AnaquoteView(new Anaquote(trigrams, enumeration, this.words)).render()
       this.$el.append(this.anaquote.$el)
-      $(document.activeElement).blur()
-      event.preventDefault()
     })
+    this.$el.append(this.input.$el)
   }
   fetchWords() {
     $.get('../vendor/NPLCombinedWordList.txt', 'text/plain').done(data => {

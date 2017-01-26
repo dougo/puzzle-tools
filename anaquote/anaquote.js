@@ -307,13 +307,21 @@ class AnaquoteView {
 class InputView {
   constructor (callback = () => { }) {
     let params = new URL(location).searchParams
-    this.$trigrams = $('<input>', {
-      name: 'trigrams', placeholder: 'Trigrams', size: '100', val: params.get('trigrams')
-    })
-    this.$enumeration = $('<input>', {
-      name: 'enumeration', placeholder: 'Enumeration', size: '100', val: params.get('enumeration')
-    })
+    let trigrams = params.get('trigrams'), enumeration = params.get('enumeration')
+
     this.$start = $('<button>', { type: 'submit', text: 'Start' })
+
+    this.$trigrams = $('<input>', {
+      name: 'trigrams', placeholder: 'Trigrams', size: '100', val: trigrams
+    })
+    this.$trigrams.change(() => {
+      this.$start.prop('disabled', !this.$trigrams.val())
+    }).change()
+
+    this.$enumeration = $('<input>', {
+      name: 'enumeration', placeholder: 'Enumeration', size: '100', val: enumeration
+    })
+
     this.$el = $('<form>').append(this.$trigrams, this.$enumeration, this.$start)
     this.$el.children().wrap('<div>') // to stack them vertically
     this.$el.submit(event => {

@@ -584,8 +584,10 @@ test('omits words view when enumeration is blank', () => {
 suite('InputView')
 
 test('constructor', () => {
-  jsdom.changeURL(window, 'http://example.com/?trigrams=HEL+LOW+ORL+D&enumeration=5+5!')
+  let url = window.location.href
+  jsdom.changeURL(window, url + '?trigrams=HEL+LOW+ORL+D&enumeration=5+5!')
   let view = new InputView()
+  jsdom.changeURL(window, url)
   assert.is('form', view.$el)
   let $children = view.$el.children('div')
   assert.equal(3, $children.length)
@@ -605,6 +607,21 @@ test('constructor', () => {
 
   assert.is('button[type=submit]', view.$start)
   assert.hasText('Start', view.$start)
+  assert.hasProp('disabled', false, view.$start)
+})
+
+test('button is disabled if trigrams param is blank', () => {
+  let view = new InputView()
+  assert.hasProp('disabled', true, view.$start)
+})
+
+test('button is enabled/disabled when trigrams input changes', () => {
+  let view = new InputView()
+  view.$trigrams.val('X').change()
+  assert.hasProp('disabled', false, view.$start)
+
+  view.$trigrams.val('').change()
+  assert.hasProp('disabled', true, view.$start)
 })
 
 test('submitting the form calls the callback with trigrams and enumeration', () => {
@@ -669,8 +686,8 @@ test('constructor', () => {
 
 test('clicking Start makes a new rendered AnaquoteView', () => {
   let view = new ApplicationView($('<div>'))
-  view.input.$trigrams.val('HEL LOW ORL D')
-  view.input.$enumeration.val('5 5!')
+  view.input.$trigrams.val('HEL LOW ORL D').change()
+  view.input.$enumeration.val('5 5!').change()
   view.input.$start.click()
   assert.instanceOf(AnaquoteView, view.anaquote)
   assert.equal(['HEL', 'LOW', 'ORL', 'D'], view.anaquote.model.trigrams)
@@ -686,8 +703,8 @@ test('clicking Start makes a new rendered AnaquoteView', () => {
 
 test('clicking Start removes the old AnaquoteView first', () => {
   let view = new ApplicationView($('<div>'))
-  view.input.$trigrams.val('HEL LOW ORL D')
-  view.input.$enumeration.val('5 5!')
+  view.input.$trigrams.val('HEL LOW ORL D').change()
+  view.input.$enumeration.val('5 5!').change()
   view.input.$start.click()
   assert.equal(2, view.$el.children().length)
 

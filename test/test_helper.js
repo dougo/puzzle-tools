@@ -55,4 +55,11 @@ assert.hasAttr = (name, value, $obj, msg) => {
                        + ` with the value '${value}', but the value was '${actual}'`))
 }
 
+assert.hasProp = (name, value, $obj, msg) => {
+  let actual = $obj.prop(name)
+  assert(value === actual,
+         utils.message(msg, `Expected ${$obj.prop('outerHTML')} to have a '${name}' property`
+                       + ` with the value '${value}', but the value was '${actual}'`))
+}
+
 module.exports = { load, assert, refute, jsdom, sinon }

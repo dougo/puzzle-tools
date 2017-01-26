@@ -31,13 +31,15 @@ Object.defineProperty(Number.prototype, 'times', {
 })
 
 class Enumeration {
-  constructor (enumeration) {
-    this.tokens = enumeration.trim().split(/(\d+)/).map(token => {
+  constructor (string) {
+    this.string = string
+    
+    this.tokens = string.trim().split(/(\d+)/).map(token => {
       let len = Number.parseInt(token)
       return isNaN(len) ? token : len
     }).filter(s => s !== '')
 
-    this.wordLengths = enumeration.split(/\s+/).map(wordPattern => {
+    this.wordLengths = string.split(/\s+/).map(wordPattern => {
       let lengths = wordPattern.match(/\d+/g)
       return lengths === null ? false : lengths.map(s => Number.parseInt(s)).sum()
     }).filter(l => l)
@@ -81,20 +83,20 @@ class Enumeration {
 }
 
 class Anaquote {
-  constructor (trigrams, enumeration = '', wordSet = new Set()) {
+  constructor (trigrams, enumeration, wordSet = new Set()) {
     this.trigrams = trigrams.trim().toUpperCase().split(/\s+/).sort((a, b) => {
       if (a.length !== b.length) return b.length - a.length // put non-trigram at the end
       return a.localeCompare(b)
     })
-    this.enumeration = new Enumeration(enumeration)
     this.wordSet = wordSet
     this.letters = this.trigrams.map(t => t.length === 3 ? '???' : t).join('')
 
-    if (this.enumeration.numWords > 0) {
-      let expectedLength = this.enumeration.wordLengths.sum()
-      if (this.letters.length < expectedLength)
+    if (enumeration) {
+      this.enumeration = new Enumeration(enumeration)
+      let total = this.enumeration.wordLengths.sum()
+      if (total > this.letters.length)
         throw new Error('Enumeration is too long!')
-      else if (this.letters.length > expectedLength)
+      else if (total < this.letters.length)
         throw new Error('Enumeration is too short!')
     }
   }
@@ -203,12 +205,14 @@ class Anaquote {
     return options.map(o => [o, this.fillInBlank(blank, o)])
   }
   formattedOptions(i) {
+    if (!this.enumeration) return this.options(i).map(o => [o, o])
     return this.constructor.formatOptions(this.options(i), this.enumeration.blanks[i])
   }
   formattedWordOptions(i) {
     return this.constructor.formatOptions(this.wordOptions(i), this.enumeration.wordBlanks[i])
   }
   quotation() {
+    if (!this.enumeration) return this.letters
     return this.constructor.fillInBlank(this.enumeration.blankString, this.letters)
   }
 }
@@ -286,13 +290,15 @@ class AnaquoteView {
     this.$el.append(this.quotation.$el)
     this.trigrams = new TrigramsView(model)
     this.$el.append(this.trigrams.$el)
-    this.words = new WordsView(model)
-    this.$el.append(this.words.$el)
+    if (model.enumeration) {
+      this.words = new WordsView(model)
+      this.$el.append(this.words.$el)
+    }
     this.$el.change(() => this.render())
   }
   render() {
     this.trigrams.render()
-    this.words.render()
+    if (this.words) this.words.render()
     this.quotation.render()
     return this
   }

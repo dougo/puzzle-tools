@@ -51,6 +51,10 @@ test('times', () => {
 
 suite('Enumeration')
 
+test('string', () => {
+  assert.equal('5, 5!', new Enumeration('5, 5!').string)
+})
+
 test('tokens', () => {
   assert.equal([3], new Enumeration('3').tokens)
   assert.equal([5, ', ', 5, '!'], new Enumeration('5, 5!').tokens)
@@ -142,8 +146,8 @@ test('trigrams omits extra spaces', () => {
 })
 
 test('enumeration', () => {
-  assert.equal([], new Anaquote('').enumeration.tokens)
-  assert.equal([5, ' ', 5, '!'], new Anaquote('HEL LOW ORL D', '5 5!').enumeration.tokens)
+  assert.equal('5 5!', new Anaquote('HEL LOW ORL D', '5 5!').enumeration.string)
+  assert.equal(undefined, new Anaquote('EXT RAV AGA NZA').enumeration)
 })
 
 test('wordSet', () => {
@@ -376,8 +380,12 @@ test('formatOptions', () => {
 
 test('formattedOptions', () => {
   let model = new Anaquote('HEL LOW ORL D', '5 5!')
-  assert.equal([['???', '?? ?'], ['HEL', 'HE L'], ['LOW', 'LO W'], ['ORL', 'OR L']],
-               model.formattedOptions(1))
+  assert.equal([['???', '?? ?'], ['HEL', 'HE L'], ['LOW', 'LO W'], ['ORL', 'OR L']], model.formattedOptions(1))
+})
+
+test('formattedOptions when enumeration is blank', () => {
+  let model = new Anaquote('HEL LOW ORL D', '')
+  assert.equal([['???', '???'], ['HEL', 'HEL'], ['LOW', 'LOW'], ['ORL', 'ORL']], model.formattedOptions(1))
 })
 
 test('formattedWordOptions', () => {
@@ -393,6 +401,11 @@ test('quotation', () => {
   model.select(1, 'LOW')
   model.select(2, 'ORL')
   assert.equal('HELLO WORLD!', model.quotation())
+})
+
+test('quotation when enumeration is blank', () => {
+  let model = new Anaquote('HEL LOW ORL D', '')
+  assert.equal('?????????D', model.quotation())
 })
 
 suite('SelectionView')
@@ -561,6 +574,13 @@ test('selecting an option re-renders', () => {
   assert.hasText(view.model.quotation(), view.quotation.$el)
 })
 
+test('omits words view when enumeration is blank', () => {
+  let view = new AnaquoteView(new Anaquote('EXT RAV AGA NZA'))
+  assert.equal(undefined, view.words)
+  assert.equal(2, view.$el.children().length)
+  view.render()
+})
+
 suite('InputView')
 
 test('constructor', () => {
@@ -654,7 +674,7 @@ test('clicking Start makes a new rendered AnaquoteView', () => {
   view.input.$start.click()
   assert.instanceOf(AnaquoteView, view.anaquote)
   assert.equal(['HEL', 'LOW', 'ORL', 'D'], view.anaquote.model.trigrams)
-  assert.equal([5, ' ', 5, '!'], view.anaquote.model.enumeration.tokens)
+  assert.equal('5 5!', view.anaquote.model.enumeration.string)
   assert.same(view.anaquote.$el[0], view.$el.children().last()[0])
   assert.hasText(view.anaquote.model.quotation(), view.anaquote.quotation.$el)
   assert.instanceOf(Set, view.anaquote.model.wordSet)

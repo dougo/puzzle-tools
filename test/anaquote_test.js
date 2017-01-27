@@ -93,12 +93,12 @@ test('word', () => {
 })
 
 test('trigramRangeForWord', () => {
-  assert.equal([0], new Enumeration('3').trigramRangeForWord(0))
-  assert.equal([1], new Enumeration('3 3').trigramRangeForWord(1))
+  assert.equal([0, 0], new Enumeration('3').trigramRangeForWord(0))
+  assert.equal([1, 1], new Enumeration('3 3').trigramRangeForWord(1))
   assert.equal([0, 1], new Enumeration('6').trigramRangeForWord(0))
-  assert.equal([0, 1, 2], new Enumeration('7').trigramRangeForWord(0))
+  assert.equal([0, 2], new Enumeration('7').trigramRangeForWord(0))
   assert.equal([1, 2], new Enumeration('3 5').trigramRangeForWord(1))
-  assert.equal([0, 1, 2], new Enumeration('2 5').trigramRangeForWord(1))
+  assert.equal([0, 2], new Enumeration('2 5').trigramRangeForWord(1))
 })
 
 test('blankString', () => {
@@ -255,10 +255,23 @@ test('word', () => {
   assert.equal('??E', model.word(1))
 })
 
-test('selectWord', () => {
-  let model = new Anaquote('HEL LOW ORL DGR EET ING', '5 5! 8.')
+test('selectWord partially selects trigrams on the border that have multiple candidates', () => {
+  let model = new Anaquote('HEL LOW ORL DWI DOW', '5 5, 5.')
   model.selectWord(1, 'WORLD')
-  assert.equal('?????WORLD????????', model.letters)
+  assert.equal('?????WORLD?????', model.letters)
+})
+
+test('selectWord fully selects partial trigrams if they have only one unique candidate', () => {
+  let model = new Anaquote('HEL LOW ORL DGR OUN DGR UEL', '5 5! 6 5.')
+  model.selectWord(1, 'WORLD')
+  assert.equal('???LOWORLDGR?????????', model.letters)
+})
+
+test('selectWord does not fully select partial trigrams if unselecting', () => {
+  let model = new Anaquote('HEL LOW ORL D', '5, 5!')
+  model.select(1, 'LOW')
+  model.selectWord(0, '?????')
+  assert.equal('?????W???D', model.letters)
 })
 
 test('unselectedWordOption', () => {
@@ -298,7 +311,7 @@ test('optionArraysForWord only includes selected trigrams in word range', () => 
 
 test('optionArraysForWord filters partially-selected trigrams', () => {
   let model = new Anaquote('ADG AGL IRL', '1 4 4')
-  model.selectWord(0, 'A')
+  model.select(0, 'A??')
   assert.equal([['ADG', 'AGL'], ['ADG', 'AGL', 'IRL']], model.optionArraysForWord(1))
 })
 
@@ -317,8 +330,8 @@ test('optionArraysForWord includes the leftover even when word is fully selected
 
 test('optionArraysForWord filters partially-selected trigrams even when word is fully selected', () => {
   let model = new Anaquote('ADG AGL IRL', '1 4 4')
-  model.selectWord(0, 'A')
-  model.selectWord(1, 'GLAD')
+  model.select(0, 'AGL')
+  model.select(1, 'AD?')
   assert.equal([['ADG', 'AGL'], ['ADG', 'AGL', 'IRL']], model.optionArraysForWord(1))
 })
 
@@ -348,15 +361,15 @@ test('wordOptions includes partially selected word', () => {
 })
 
 test('wordOptions includes an unselection option when a word is fully selected', () => {
-  let model = new Anaquote('HEL LOW ORL D', '5 5!', new Set(['HELLO', 'HELOR', 'WORLD', 'WHELD', 'LLOWD']))
+  let model = new Anaquote('HEL LOW ORL D', '5 5!', new Set(['WORLD']))
   model.selectWord(1, 'WORLD')
-  assert.equal(['????D', 'LLOWD', 'WHELD', 'WORLD'], model.wordOptions(1))
+  assert.equal(['????D', 'WORLD'], model.wordOptions(1))
 })
 
 test('wordOptions includes current word even if not in the wordSet', () => {
-  let model = new Anaquote('HEL LOW ORL D', '5 5!', new Set(['HELLO']))
-  model.selectWord(0, 'HELOR')
-  assert.equal(['?????', 'HELLO', 'HELOR'], model.wordOptions(0))
+  let model = new Anaquote('SEL VES', '6', new Set(['SELVES']))
+  model.select(0, 'VESSEL')
+  assert.equal(['??????', 'SELVES', 'VESSEL'], model.wordOptions(0))
 })
 
 test('wordOptions includes apostrophes, hyphens, and slashes when looking up words', () => {

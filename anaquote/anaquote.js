@@ -78,7 +78,7 @@ class Enumeration {
     let len = this.wordLengths[i]
     let startTrigram = Math.floor(start / 3)
     let endTrigram = Math.floor((start + len - 1) / 3)
-    return startTrigram.upTo(endTrigram)
+    return [startTrigram, endTrigram]
   }
 }
 
@@ -153,6 +153,14 @@ class Anaquote {
   }
   selectWord(i, word) {
     this.letters = this.letters.replaceAt(this.enumeration.wordStart(i), word)
+    if (word.includes('?')) return
+    // Auto-select unique trigrams that overlap the word.
+    this.enumeration.trigramRangeForWord(i).forEach(i => {
+      if (this.selection(i).includes('?')) {
+        let avail = this.available(i).uniq()
+        if (avail.length === 1) this.select(i, avail[0])
+      }
+    })
   }
   unselectedWordOption(i) {
     let len = this.enumeration.wordLength(i)
@@ -178,7 +186,6 @@ class Anaquote {
   optionArraysForWord(i) {
     let word = this.word(i)
     let fullySelected = !word.includes('?')
-    let range = this.enumeration.trigramRangeForWord(i)
     let selections = this.selections
     if (fullySelected) {
       // Act as if the word is unselected, to include all alternative word candidates.
@@ -186,7 +193,8 @@ class Anaquote {
       selections = letters.match(/..?.?/g)
     }
     let availableTrigrams = this.trigrams.subtract(selections)
-    return range.map(i => {
+    let [first, last] = this.enumeration.trigramRangeForWord(i)
+    return first.upTo(last).map(i => {
       let selection = selections[i]
       if (!selection.includes('?')) return [selection]
       let regexp = new RegExp(selection.replace(/\?/g, '.'))

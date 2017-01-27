@@ -114,6 +114,16 @@ class Anaquote {
     this.wordSet = wordSet
   }
 
+  get letters () { return this._letters }
+  set letters (letters) {
+    this._letters = letters
+    this.selections.forEach((t, i) => {
+      if (t !== '???' && t.includes('?') && this.available(i).length === 0)
+        letters = letters.replaceAt(i*3, '???')
+    })
+    this._letters = letters
+  }
+
   get selections () {
     return this.letters.match(/..?.?/g)
   }

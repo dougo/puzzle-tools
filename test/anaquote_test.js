@@ -140,6 +140,13 @@ test('error if more than one leftover', () => {
   assert.equal('More than one leftover: OR LD', ex.message)
 })
 
+test('setting letters unselects partial trigrams that now have no available matches', () => {
+  let model = new Anaquote('SEL VES')
+  model.letters = 'S?????'
+  model.letters = 'S??SEL'
+  assert.equal('???SEL', model.letters)
+})
+
 test('trigrams is an array', () => {
   assert.equal(['HEL', 'LOW', 'ORL', 'D'], new Anaquote('HEL LOW ORL D').trigrams)
 })
@@ -173,11 +180,17 @@ test('letters', () => {
 })
 
 test('selections', () => {
-  assert.equal(['???', '???', '???', 'D'], new Anaquote('HEL LOW ORL D').selections)
+  let model = new Anaquote('HEL LOW ORL D')
+  assert.equal(['???', '???', '???', 'D'], model.selections)
+  model.letters = 'HELLOWORLD'
+  assert.equal(['HEL', 'LOW', 'ORL', 'D'], model.selections)
 })
 
 test('words', () => {
-  assert.equal(['?????', '????D'], new Anaquote('HEL LOW ORL D', '5 5!').words)
+  let model = new Anaquote('HEL LOW ORL D', '5 5!')
+  assert.equal(['?????', '????D'], model.words)
+  model.letters = 'HELLOWORLD'
+  assert.equal(['HELLO', 'WORLD'], model.words)
 })
 
 test('selection', () => {
@@ -191,8 +204,6 @@ test('select', () => {
   model.select(0, 'HEL')
   model.select(2, 'ORL')
   assert.equal('HEL???ORLD', model.letters)
-  assert.equal(['HEL', '???', 'ORL', 'D'], model.selections)
-  assert.equal(['HEL??', '?ORLD'], model.words)
 })
 
 test('isSelected', () => {

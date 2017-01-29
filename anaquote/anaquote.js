@@ -30,6 +30,22 @@ Object.defineProperty(Number.prototype, 'times', {
   get: function () { return (0).upTo(this - 1) }
 })
 
+class WordSet extends Set {
+  constructor (words = []) {
+    super(words)
+    let prefixes = new Set(words)
+    prefixes.add('')
+    words.forEach(word => {
+      for (let i = 1; i < word.length; i++)
+        prefixes.add(word.substr(0, i))
+    })
+    this.prefixes = prefixes
+  }
+  hasPrefix(prefix) {
+    return this.prefixes.has(prefix)
+  }
+}
+
 class Enumeration {
   constructor (string) {
     this.string = string
@@ -60,6 +76,11 @@ class Enumeration {
     this.blanks = this.blankString.match(/[^_]*_[^_]*_?[^_]*_?[^_]*/g)
 
     this.wordBlanks = this.blankString.match(/[^_]*_+[^\s]*\s*/g)
+
+    this.trimmedWordBlanks = this.wordBlanks.map(blank => {
+      blank = blank.replace(/\u2019/g, "'") // Allow smart-apostrophe, but our word list only has ASCII apostrophe.
+      return blank.replace(/[^-_\/'A-Z0-9]/g, '')
+    })
   }
   wordLength(i) {
     return this.wordLengths[i]
@@ -83,8 +104,8 @@ class Enumeration {
 }
 
 class Anaquote {
-  constructor (trigrams, enumeration, wordSet = new Set()) {
-    this.trigrams = trigrams.trim().toUpperCase().split(/\s+/)
+  constructor (trigrams, enumeration, wordSet = new WordSet()) {
+   this.trigrams = trigrams.trim().toUpperCase().split(/\s+/)
 
     let leftover
     this.trigrams.forEach(t => {
@@ -183,13 +204,14 @@ class Anaquote {
     return '?'.repeat(len)
   }
   // TODO: move this to Array? maybe named productWithoutRepeats or something??
-  static permuteOptions(optionArrays, selections = []) {
+  static permuteOptions(optionArrays, checkPrefix = x => true, selections = []) {
+    if (!checkPrefix(selections)) return []
     if (optionArrays.length === 0) return [[]]
     let options = optionArrays[0].subtract(selections)
     let restOptionArrays = optionArrays.slice(1)
     return options.flatMap(selection => {
-      let newSelections = [selection, ...selections]
-      let permutations = this.permuteOptions(restOptionArrays, newSelections)
+      let newSelections = [...selections, selection]
+      let permutations = this.permuteOptions(restOptionArrays, checkPrefix, newSelections)
       return permutations.map(permutation => [selection, ...permutation])
     })
   }
@@ -212,17 +234,21 @@ class Anaquote {
     })
   }
   wordCandidates(i) {
+    let blank = this.enumeration.trimmedWordBlanks[i]
     let offset = this.enumeration.wordStart(i) % 3
     let len = this.word(i).length
-    return this.constructor.permuteOptions(this.optionArraysForWord(i)).map(p => p.join('').substr(offset, len))
+    function permutationToWord(p) { return p.join('').substr(offset, len) }
+    return this.constructor.permuteOptions(this.optionArraysForWord(i), prefix => {
+      let w = permutationToWord(prefix)
+      let l = w.length
+      w = this.constructor.fillInBlank(blank, w)
+      w = w.substr(0, l) // TODO: add number of internal punctuation symbols?
+      return this.wordSet.hasPrefix(w)
+    }).map(permutationToWord)
   }
   wordOptions(i) {
-    let words = this.wordCandidates(i).filter(w => {
-      w = this.constructor.fillInBlank(this.enumeration.wordBlanks[i], w)
-      w = w.replace(/\u2019/g, "'") // Allow smart-apostrophe, but our word list only has ASCII apostrophe.
-      w = w.replace(/[^-\/'A-Z0-9]/g, '')
-      return this.wordSet.has(w)
-    })
+    let blank = this.enumeration.trimmedWordBlanks[i]
+    let words = this.wordCandidates(i).filter(w => this.wordSet.has(this.constructor.fillInBlank(blank, w)))
     let word = this.word(i)
     if (word.includes('?')) words.unshift(word)
     return [this.unselectedWordOption(i), ...words, word].uniq().sort()
@@ -381,7 +407,7 @@ class ApplicationView {
   }
   fetchWords() {
     $.get('../vendor/NPLCombinedWordList.txt', 'text/plain').done(data => {
-      this.words = new Set(data.split(/\r?\n/).map(w => w.toUpperCase()))
+      this.words = new WordSet(data.split(/\r?\n/).map(w => w.toUpperCase()))
       console.log('Fetched wordlist.')
     }).fail(data => {
       console.log('Failed to fetch wordlist:')

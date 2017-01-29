@@ -49,6 +49,26 @@ test('times', () => {
   assert.equal([], (-3).times)
 })
 
+suite('WordSet')
+
+test('is a Set', () => {
+  let wordSet = new WordSet()
+  assert.instanceOf(Set, wordSet)
+})
+
+test('hasPrefix', () => {
+  let wordSet = new WordSet(['IT'])
+  assert(wordSet.hasPrefix('IT'))
+  assert(wordSet.hasPrefix('I'))
+  assert(wordSet.hasPrefix(''))
+  refute(wordSet.hasPrefix('T'))
+})
+
+test('hasPrefix is true for empty string', () => {
+  let wordSet = new WordSet([''])
+  assert(wordSet.hasPrefix(''))
+})
+
 suite('Enumeration')
 
 test('string', () => {
@@ -122,6 +142,10 @@ test('wordBlanks', () => {
   assert.equal(['HELLO, _____!'], new Enumeration('HELLO, 5!').wordBlanks)
 })
 
+test('trimmedWordBlanks', () => {
+  assert.equal(['_____-__', '___/__', "_'____", "___'_"], new Enumeration("*5-2  (3/2) 1'4 3’1 ").trimmedWordBlanks)
+})
+
 suite('Anaquote')
 
 test('error if total length of trigrams differs from enumeration', () => {
@@ -167,10 +191,10 @@ test('enumeration', () => {
 
 test('wordSet', () => {
   let model = new Anaquote('HEL LOW ORL D')
-  assert.instanceOf(Set, model.wordSet)
+  assert.instanceOf(WordSet, model.wordSet)
   assert.equal(0, model.wordSet.size)
 
-  let wordSet = new Set(['HELLO', 'WORLD'])
+  let wordSet = new WordSet(['HELLO', 'WORLD'])
   model = new Anaquote('HEL LOW ORL D', '5 5!', wordSet)
   assert.same(wordSet, model.wordSet)
 })
@@ -303,6 +327,11 @@ test('permuteOptions', () => {
                 [4,2,1], [4,2,3], [4,3,1]], Anaquote.permuteOptions([[1,2,3,4], [2,3], [1,3,4]]))
 })
 
+test('permuteOptions with checkPrefix function', () => {
+  function isSorted(array) { return array.length < 2 || array[0] <= array[1] && isSorted(array.slice(1)) }
+  assert.equal([[1,2,3], [1,2,4], [1,3,4], [2,3,4]], Anaquote.permuteOptions([[1,2,3,4], [2,3], [1,3,4]], isSorted))
+})
+
 test('optionArraysForWord includes trigrams for each slot in word range', () => {
   let model = new Anaquote('LAY OFF OUT SET', '6 6')
   assert.equal([['LAY', 'OFF', 'OUT', 'SET'], ['LAY', 'OFF', 'OUT', 'SET']], model.optionArraysForWord(0))
@@ -346,45 +375,45 @@ test('optionArraysForWord filters partially-selected trigrams even when word is 
   assert.equal([['ADG', 'AGL'], ['ADG', 'AGL', 'IRL']], model.optionArraysForWord(1))
 })
 
-test('wordCandidates permutes options and forms words', () => {
-  let model = new Anaquote('LAY OFF OUT SET', '6 6')
+test('wordCandidates permutes options, prunes non-prefixes, and returns words', () => {
+  let model = new Anaquote('LAY OFF OUT SET', '6 6', new WordSet(['LAYOFFS', 'OFFLAYS', 'OFFSETS', 'SETOFFS']))
   model.selectWord(0, 'LAYOFF')
   model.select(2, 'OUT')
-  assert.equal(['LAYOFF', 'LAYSET', 'OFFLAY', 'OFFSET', 'SETLAY', 'SETOFF'], model.wordCandidates(0))
+  assert.equal(['LAYOFF', 'OFFLAY', 'OFFSET', 'SETOFF'], model.wordCandidates(0))
 })
 
 test('wordCandidates selects the proper substrings', () => {
-  let model = new Anaquote('DIT IDI', '1 3 2!')
+  let model = new Anaquote('DIT IDI', '1 3 2!', new WordSet(['ITI', 'DID']))
   assert.equal(['ITI', 'DID'], model.wordCandidates(1))
 })
 
 test('wordOptions filters through wordSet and includes an unselection option', () => {
   let words = ['LAYOFF', 'LAYOUT', 'OFFSET', 'OUTLAY', 'OUTSET', 'SETOFF', 'SETOUT']
-  let model = new Anaquote('LAY OFF OUT SET', '6 6', new Set(words))
+  let model = new Anaquote('LAY OFF OUT SET', '6 6', new WordSet(words))
   assert.equal(['??????', ...words], model.wordOptions(0))
 })
 
 test('wordOptions includes partially selected word', () => {
-  model = new Anaquote('HEL LOW ORL D', '5 5!', new Set(['HELLO', 'HELOR', 'WORLD', 'WHELD', 'LLOWD']))
+  model = new Anaquote('HEL LOW ORL D', '5 5!', new WordSet(['HELLO', 'HELOR', 'WORLD', 'WHELD', 'LLOWD']))
   model.select(1, 'LOW')
   assert.equal(['?????', '???LO', 'HELLO'], model.wordOptions(0))
   assert.equal(['????D', 'W???D', 'WHELD', 'WORLD'], model.wordOptions(1))
 })
 
 test('wordOptions includes an unselection option when a word is fully selected', () => {
-  let model = new Anaquote('HEL LOW ORL D', '5 5!', new Set(['WORLD']))
+  let model = new Anaquote('HEL LOW ORL D', '5 5!', new WordSet(['WORLD']))
   model.selectWord(1, 'WORLD')
   assert.equal(['????D', 'WORLD'], model.wordOptions(1))
 })
 
 test('wordOptions includes current word even if not in the wordSet', () => {
-  let model = new Anaquote('SEL VES', '6', new Set(['SELVES']))
+  let model = new Anaquote('SEL VES', '6', new WordSet(['SELVES']))
   model.select(0, 'VESSEL')
   assert.equal(['??????', 'SELVES', 'VESSEL'], model.wordOptions(0))
 })
 
 test('wordOptions includes apostrophes, hyphens, and slashes when looking up words', () => {
-  let wordSet = new Set(['AND/OR', "CAN'T", 'CATCH-22', "L'OEIL", 'RANT'])
+  let wordSet = new WordSet(['AND/OR', "CAN'T", 'CATCH-22', "L'OEIL", 'RANT'])
   let model = new Anaquote('CAT CH2 2AN DOR LOE ILC ANT', "5-2 (3/2) 1'4 3’1", wordSet)
   assert.equal(['???????', 'CATCH22'],  model.wordOptions(0))
   assert.equal(['?????', 'ANDOR'],  model.wordOptions(1))
@@ -393,7 +422,7 @@ test('wordOptions includes apostrophes, hyphens, and slashes when looking up wor
 })
 
 test('wordOptions is sorted', () => {
-  let model = new Anaquote('AST IFE', '1 5', new Set(['A', 'FEAST', 'I', 'STIFE']))
+  let model = new Anaquote('AST IFE', '1 5', new WordSet(['A', 'FEAST', 'I', 'STIFE']))
   assert.equal(['?????', 'FEAST', 'STIFE'], model.wordOptions(1))
 })
 
@@ -421,7 +450,7 @@ test('formattedOptions when enumeration is blank', () => {
 })
 
 test('formattedWordOptions', () => {
-  let model = new Anaquote('GOO DBY E', '4 3!', new Set(['GOOD', 'DBYG', 'OOE', 'BYE']))
+  let model = new Anaquote('GOO DBY E', '4 3!', new WordSet(['GOOD', 'DBYG', 'OOE', 'BYE']))
   assert.equal([['????', '???? '], ['DBYG', 'DBYG '], ['GOOD', 'GOOD ']], model.formattedWordOptions(0))
   assert.equal([['??E', '??E!'], ['BYE', 'BYE!'], ['OOE', 'OOE!']], model.formattedWordOptions(1))
 })
@@ -527,7 +556,7 @@ test('extends SelectionView', () => {
 suite('WordSelectionView')
 
 test('extends SelectionView', () => {
-  let view = new WordSelectionView(new Anaquote('HEL LOW ORL D', '5 5!', new Set(['HELLO'])), 0)
+  let view = new WordSelectionView(new Anaquote('HEL LOW ORL D', '5 5!', new WordSet(['HELLO'])), 0)
   assert.instanceOf(SelectionView, view)
   assert.equal(view.model.formattedWordOptions(1), view.modelOptions(1))
   assert.equal('?????', view.modelValue(0))
@@ -726,9 +755,9 @@ test('clicking Start makes a new rendered AnaquoteView', () => {
   assert.equal('5 5!', view.anaquote.model.enumeration.string)
   assert.same(view.anaquote.$el[0], view.$el.children().last()[0])
   assert.hasText(view.anaquote.model.quotation(), view.anaquote.quotation.$el)
-  assert.instanceOf(Set, view.anaquote.model.wordSet)
+  assert.instanceOf(WordSet, view.anaquote.model.wordSet)
 
-  view.words = new Set(['HELLO', 'WORLD'])
+  view.words = new WordSet(['HELLO', 'WORLD'])
   view.input.$start.click()
   assert.same(view.words, view.anaquote.model.wordSet)
 })
@@ -757,3 +786,28 @@ test.skip('fetchWords', () => {
   
   server.restore()
 })
+
+suite('performance')
+
+before('load the word list', () => {
+  const fs = require('fs')
+  const wordList = fs.readFileSync(__dirname + '/../vendor/NPLCombinedWordList.txt', 'latin1')
+  wordSet = new WordSet(wordList.split(/\r?\n/).map(w => w.toUpperCase()))
+})
+
+test('four long words', () => {
+  let model = new Anaquote('AGA EXT ILO IZE NZA QUI RAV RDS RGA RIT SBO SMO SOL SPI UAL ZED', '12 12 12 12',
+                           wordSet)
+  assert.equal(['????????????', 'EXTRAVAGANZA', 'SMORGASBORDS', 'SOLILOQUIZED', 'SPIRITUALIZE'],
+               model.wordOptions(0))
+})
+ 
+test('full sentence', () => {
+  let trigrams =
+      'ABA AND ARI BOO ABC DGE DNT DOF EDI ESS FIR GER HOL ISG ISH KBU ' +
+      'LSE LYI NCL NEC NIE NME NTH PSH ROU STP TDI THE THO UBL UDE WAS'
+  let enumeration = "3 6 7 6 2 3 3 5 9 2 4 5'1 8 (3 4'1 11 7 1 5)."
+  let model = new Anaquote(trigrams, enumeration, wordSet)
+  let view = new AnaquoteView(model).render()
+})
+

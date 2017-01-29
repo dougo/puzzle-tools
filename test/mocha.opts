@@ -1,1 +1,1 @@
--u qunit -r jsdom-global/register
+-u qunit -r jsdom-global/register -t 20000

@@ -33,16 +33,16 @@ Object.defineProperty(Number.prototype, 'times', {
 class WordSet extends Set {
   constructor (words = []) {
     super(words)
-    let prefixes = new Set(words)
-    prefixes.add('')
+    let prefixes = []
     words.forEach(word => {
-      for (let i = 1; i < word.length; i++)
-        prefixes.add(word.substr(0, i))
+      let len = word.length
+      if (!prefixes[len]) prefixes[len] = new Set()
+      for (let i = 0; i <= len; i++) prefixes[len].add(word.substr(0, i))
     })
     this.prefixes = prefixes
   }
-  hasPrefix(prefix) {
-    return this.prefixes.has(prefix)
+  hasPrefix(prefix, wordLength) {
+    return this.prefixes[wordLength] && this.prefixes[wordLength].has(prefix)
   }
 }
 
@@ -238,25 +238,32 @@ class Anaquote {
     let offset = this.enumeration.wordStart(i) % 3
     let len = this.word(i).length
     function permutationToWord(p) { return p.join('').substr(offset, len) }
-    return this.constructor.permuteOptions(this.optionArraysForWord(i), prefix => {
-      let w = permutationToWord(prefix)
-      let l = w.length
-      w = this.constructor.fillInBlank(blank, w)
-      w = w.substr(0, l) // TODO: add number of internal punctuation symbols?
-      return this.wordSet.hasPrefix(w)
+    return this.constructor.permuteOptions(this.optionArraysForWord(i), perm => {
+      let prefix = this.constructor.fillInBlankPrefix(blank, permutationToWord(perm))
+      return this.wordSet.hasPrefix(prefix, blank.length)
     }).map(permutationToWord)
   }
   wordOptions(i) {
-    let blank = this.enumeration.trimmedWordBlanks[i]
-    let words = this.wordCandidates(i).filter(w => this.wordSet.has(this.constructor.fillInBlank(blank, w)))
-    let word = this.word(i)
-    if (word.includes('?')) words.unshift(word)
-    return [this.unselectedWordOption(i), ...words, word].uniq().sort()
+    return [this.unselectedWordOption(i), this.word(i), ...this.wordCandidates(i)].uniq().sort()
   }
 
   static fillInBlank(blank, fill) {
     let letters = (fill + '???').split('')
     return blank.split('').map(b => b === '_' ? letters.shift() : b).join('')
+  }
+  static fillInBlankPrefix(blank, fill) {
+    let letters = fill.split('')
+    let filled = []
+    for (let b of blank.split('')) {
+      if (b !== '_') {
+        filled.push(b)
+      } else if (letters.length === 0) {
+        break
+      } else {
+        filled.push(letters.shift())
+      }
+    }
+    return filled.join('')
   }
   static formatOptions(options, blank) {
     return options.map(o => [o, this.fillInBlank(blank, o)])

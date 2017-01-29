@@ -58,15 +58,12 @@ test('is a Set', () => {
 
 test('hasPrefix', () => {
   let wordSet = new WordSet(['IT'])
-  assert(wordSet.hasPrefix('IT'))
-  assert(wordSet.hasPrefix('I'))
-  assert(wordSet.hasPrefix(''))
-  refute(wordSet.hasPrefix('T'))
-})
-
-test('hasPrefix is true for empty string', () => {
-  let wordSet = new WordSet([''])
-  assert(wordSet.hasPrefix(''))
+  assert(wordSet.hasPrefix('IT', 2))
+  assert(wordSet.hasPrefix('I', 2))
+  assert(wordSet.hasPrefix('', 2))
+  refute(wordSet.hasPrefix('T', 2))
+  refute(wordSet.hasPrefix('I', 3))
+  refute(wordSet.hasPrefix('I', 1))
 })
 
 suite('Enumeration')
@@ -376,7 +373,7 @@ test('optionArraysForWord filters partially-selected trigrams even when word is 
 })
 
 test('wordCandidates permutes options, prunes non-prefixes, and returns words', () => {
-  let model = new Anaquote('LAY OFF OUT SET', '6 6', new WordSet(['LAYOFFS', 'OFFLAYS', 'OFFSETS', 'SETOFFS']))
+  let model = new Anaquote('LAY OFF OUT SET', '6 6', new WordSet(['LAYOFF', 'OFFLAY', 'OFFSET', 'SETOFF']))
   model.selectWord(0, 'LAYOFF')
   model.select(2, 'OUT')
   assert.equal(['LAYOFF', 'OFFLAY', 'OFFSET', 'SETOFF'], model.wordCandidates(0))
@@ -385,6 +382,15 @@ test('wordCandidates permutes options, prunes non-prefixes, and returns words', 
 test('wordCandidates selects the proper substrings', () => {
   let model = new Anaquote('DIT IDI', '1 3 2!', new WordSet(['ITI', 'DID']))
   assert.equal(['ITI', 'DID'], model.wordCandidates(1))
+})
+
+test('wordCandidates includes apostrophes, hyphens, and slashes when looking up words', () => {
+  let wordSet = new WordSet(['AND/OR', "CAN'T", 'CATCH-22', "L'OEIL", 'RANT'])
+  let model = new Anaquote('CAT CH2 2AN DOR LOE ILC ANT', "5-2 (3/2) 1'4 3’1", wordSet)
+  assert.equal(['CATCH22'],  model.wordCandidates(0))
+  assert.equal(['ANDOR'],  model.wordCandidates(1))
+  assert.equal(['LOEIL',],  model.wordCandidates(2))
+  assert.equal(['CANT'],  model.wordCandidates(3))
 })
 
 test('wordOptions filters through wordSet and includes an unselection option', () => {
@@ -412,15 +418,6 @@ test('wordOptions includes current word even if not in the wordSet', () => {
   assert.equal(['??????', 'SELVES', 'VESSEL'], model.wordOptions(0))
 })
 
-test('wordOptions includes apostrophes, hyphens, and slashes when looking up words', () => {
-  let wordSet = new WordSet(['AND/OR', "CAN'T", 'CATCH-22', "L'OEIL", 'RANT'])
-  let model = new Anaquote('CAT CH2 2AN DOR LOE ILC ANT', "5-2 (3/2) 1'4 3’1", wordSet)
-  assert.equal(['???????', 'CATCH22'],  model.wordOptions(0))
-  assert.equal(['?????', 'ANDOR'],  model.wordOptions(1))
-  assert.equal(['?????', 'LOEIL',],  model.wordOptions(2))
-  assert.equal(['????', 'CANT'],  model.wordOptions(3))
-})
-
 test('wordOptions is sorted', () => {
   let model = new Anaquote('AST IFE', '1 5', new WordSet(['A', 'FEAST', 'I', 'STIFE']))
   assert.equal(['?????', 'FEAST', 'STIFE'], model.wordOptions(1))
@@ -433,6 +430,12 @@ test('fillInBlank', () => {
   assert.equal('D? ?', Anaquote.fillInBlank('__ _', 'D'))
   assert.equal('D!', Anaquote.fillInBlank('_!', 'D'))
   assert.equal('H!', Anaquote.fillInBlank('_!', 'HEL'))
+})
+
+test('fillInBlankPrefix', () => {
+  assert.equal('', Anaquote.fillInBlankPrefix('_-___', ''))
+  assert.equal('X-', Anaquote.fillInBlankPrefix('_-___', 'X'))
+  assert.equal('X-R', Anaquote.fillInBlankPrefix('_-___', 'XR'))
 })
 
 test('formatOptions', () => {
@@ -804,7 +807,7 @@ test('four long words', () => {
  
 test('full sentence', () => {
   let trigrams =
-      'ABA AND ARI BOO ABC DGE DNT DOF EDI ESS FIR GER HOL ISG ISH KBU ' +
+      'ABA AND ARI BOO CPR DGE DNT DOF EDI ESS FIR GER HOL ISG ISH KBU ' +
       'LSE LYI NCL NEC NIE NME NTH PSH ROU STP TDI THE THO UBL UDE WAS'
   let enumeration = "3 6 7 6 2 3 3 5 9 2 4 5'1 8 (3 4'1 11 7 1 5)."
   let model = new Anaquote(trigrams, enumeration, wordSet)

@@ -4,6 +4,11 @@ load('anaquote/anaquote.js')
 
 suite('Array utils')
 
+test('last', () => {
+  assert.equal(undefined, [].last())
+  assert.equal(1, [1].last())
+  assert.equal(3, [1, 2, 3].last())
+})
 test('remove', () => {
   let array = [1, 2, 3, 1]
   assert.equal([2, 3, 1], array.remove(1))
@@ -19,10 +24,11 @@ test('sum', () => {
   assert.equal(0, [].sum())
   assert.equal(6, [1, 2, 3].sum())
 })
-test('uniq', () => {
-  assert.equal([], [].uniq())
-  assert.equal([1, 2, 3], [1, 2, 3, 1].uniq())
-  assert.equal([1, 2, 3], [1, 2, 3].uniq())
+test('squeeze', () => {
+  assert.equal([], [].squeeze())
+  assert.equal([1], [1].squeeze())
+  assert.equal([1, 2, 3], [1, 1, 2, 2, 3].squeeze())
+  assert.equal([1, 2, 3, 1], [1, 2, 3, 1].squeeze())
 })
 test('flatMap', () => {
   assert.equal([2, 3, 4], [1, 2, 3].flatMap(x => x + 1))

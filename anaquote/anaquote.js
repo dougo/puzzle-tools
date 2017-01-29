@@ -1,3 +1,6 @@
+Array.prototype.last = function () {
+  return this[this.length - 1]
+}
 Array.prototype.remove = function (x) {
   let i = this.indexOf(x)
   if (i < 0) return this
@@ -12,8 +15,12 @@ Array.prototype.subtract = function (array) {
 Array.prototype.sum = function () {
   return this.reduce((sum, i) => sum + i, 0)
 }
-Array.prototype.uniq = function () {
-  return [...new Set(this)]
+Array.prototype.squeeze = function () {
+  let s = []
+  this.forEach((x, i) => {
+    if (i === 0 || x !== s.last()) s.push(x)
+  })
+  return s
 }
 Array.prototype.flatMap = function (f) {
   return [].concat(...this.map(f))
@@ -173,7 +180,7 @@ class Anaquote {
     if (selection.length < 3) return [selection]
     let opts = this.available(i)
     if (selection.includes('?')) opts.unshift(selection)
-    return ['???', ...opts].uniq()
+    return ['???', ...opts].squeeze()
   }
 
   get words () {
@@ -188,7 +195,7 @@ class Anaquote {
     // Auto-select unique trigrams that overlap the word.
     this.enumeration.trigramRangeForWord(i).forEach(i => {
       if (this.selection(i).includes('?')) {
-        let avail = this.available(i).uniq()
+        let avail = this.available(i).squeeze()
         if (avail.length === 1) this.select(i, avail[0])
       }
     })
@@ -244,7 +251,7 @@ class Anaquote {
     }).map(permutationToWord)
   }
   wordOptions(i) {
-    return [this.unselectedWordOption(i), this.word(i), ...this.wordCandidates(i)].uniq().sort()
+    return [this.unselectedWordOption(i), this.word(i), ...this.wordCandidates(i)].sort().squeeze()
   }
 
   static fillInBlank(blank, fill) {

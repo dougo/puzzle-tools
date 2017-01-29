@@ -80,7 +80,7 @@ class Enumeration {
       return typeof token === 'string' ? token : '_'.repeat(token)
     }).join('')
 
-    this.blanks = this.blankString.match(/[^_]*_[^_]*_?[^_]*_?[^_]*/g)
+    this.trigramBlanks = this.blankString.match(/[^_]*_[^_]*_?[^_]*_?[^_]*/g)
 
     this.wordBlanks = this.blankString.match(/[^_]*_+[^\s]*\s*/g)
 
@@ -95,11 +95,11 @@ class Enumeration {
   wordStart(i) {
     return this.wordStarts[i]
   }
-  word(i, letters) {
-    return letters.substr(this.wordStarts[i], this.wordLengths[i])
+  word(i, string) {
+    return string.substr(this.wordStarts[i], this.wordLengths[i])
   }
-  words(letters) {
-    return this.numWords.times.map(i => this.word(i, letters))
+  words(string) {
+    return this.numWords.times.map(i => this.word(i, string))
   }
   trigramRangeForWord(i) {
     let start = this.wordStarts[i]
@@ -128,75 +128,74 @@ class Anaquote {
       return a.localeCompare(b)
     })
 
-    this.letters = this.trigrams.map(t => t.length === 3 ? '???' : t).join('')
+    this.selectedString = this.trigrams.map(t => t.length === 3 ? '???' : t).join('')
 
     if (enumeration) {
       this.enumeration = new Enumeration(enumeration)
-      let total = this.enumeration.wordLengths.sum()
-      if (total > this.letters.length)
+      let enumerationTotal = this.enumeration.wordLengths.sum()
+      let trigramsTotal = this.trigrams.join('').length
+      if (enumerationTotal > trigramsTotal)
         throw new Error('Enumeration is too long!')
-      else if (total < this.letters.length)
+      else if (enumerationTotal < trigramsTotal)
         throw new Error('Enumeration is too short!')
     }
 
     this.wordSet = wordSet
   }
 
-  get letters () { return this._letters }
-  set letters (letters) {
-    this._letters = letters
-    this.selections.forEach((t, i) => {
-      if (t !== '???' && t.includes('?') && this.available(i).length === 0)
-        letters = letters.replaceAt(i*3, '???')
+  get selectedString () { return this._selectedString }
+  set selectedString (string) {
+    this._selectedString = string
+    this.selectedTrigrams.forEach((t, i) => {
+      // Unselect partially-selected trigrams that now have no options.
+      if (t !== '???' && t.includes('?') && this.availableTrigrams(i).length === 0)
+        string = string.replaceAt(i*3, '???')
     })
-    this._letters = letters
+    this._selectedString = string
   }
 
-  get selections () {
-    return this.letters.match(/..?.?/g)
+  get selectedTrigrams () {
+    return this.selectedString.match(/..?.?/g)
   }
-  selection(i) {
-    return this.letters.substr(i*3, 3)
+  selectedTrigram(i) {
+    return this.selectedString.substr(i*3, 3)
   }
-  select(i, trigram) {
-    this.letters = this.letters.replaceAt(i*3, trigram)
+  selectTrigram(i, trigram) {
+    this.selectedString = this.selectedString.replaceAt(i*3, trigram)
   }
-  isSelected(i) {
-    return this.trigrams.includes(this.selection(i))
-  }
-  available(i) {
-    let selection = this.selection(i)
-    if (selection.length < 3) return [selection]
-    let otherSelections = this.selections.remove(selection)
-    let avail = this.trigrams.subtract(otherSelections)
-    if (selection.includes('?')) {
-      let regexp = new RegExp(selection.replace(/\?/g, '.'))
+  availableTrigrams(i) {
+    let trigram = this.selectedTrigram(i)
+    if (trigram.length < 3) return [trigram]
+    let otherSelectedTrigrams = this.selectedTrigrams.remove(trigram)
+    let avail = this.trigrams.subtract(otherSelectedTrigrams)
+    if (trigram.includes('?')) {
+      let regexp = new RegExp(trigram.replace(/\?/g, '.'))
       avail = avail.filter(t => regexp.test(t))
     }
     return avail
   }
-  options(i) {
-    let selection = this.selection(i)
-    if (selection.length < 3) return [selection]
-    let opts = this.available(i)
-    if (selection.includes('?')) opts.unshift(selection)
+  trigramOptions(i) {
+    let trigram = this.selectedTrigram(i)
+    if (trigram.length < 3) return [trigram]
+    let opts = this.availableTrigrams(i)
+    if (trigram.includes('?')) opts.unshift(trigram)
     return ['???', ...opts].squeeze()
   }
 
-  get words () {
-    return this.enumeration.words(this.letters)
+  get selectedWords () {
+    return this.enumeration.words(this.selectedString)
   }
-  word(i) {
-    return this.enumeration.word(i, this.letters)
+  selectedWord(i) {
+    return this.enumeration.word(i, this.selectedString)
   }
   selectWord(i, word) {
-    this.letters = this.letters.replaceAt(this.enumeration.wordStart(i), word)
+    this.selectedString = this.selectedString.replaceAt(this.enumeration.wordStart(i), word)
     if (word.includes('?')) return
     // Auto-select unique trigrams that overlap the word.
     this.enumeration.trigramRangeForWord(i).forEach(i => {
-      if (this.selection(i).includes('?')) {
-        let avail = this.available(i).squeeze()
-        if (avail.length === 1) this.select(i, avail[0])
+      if (this.selectedTrigram(i).includes('?')) {
+        let avail = this.availableTrigrams(i).squeeze()
+        if (avail.length === 1) this.selectTrigram(i, avail[0])
       }
     })
   }
@@ -204,8 +203,8 @@ class Anaquote {
     let len = this.enumeration.wordLength(i)
     if (i === this.enumeration.numWords - 1) {
       // Don't unselect the leftover (the final non-trigram).
-      let leftoverLength = this.letters.length % 3
-      let leftover = this.letters.substr(-leftoverLength, leftoverLength)
+      let leftoverLength = this.selectedString.length % 3
+      let leftover = this.selectedString.substr(-leftoverLength, leftoverLength)
       return '?'.repeat(len - leftoverLength) + leftover
     }
     return '?'.repeat(len)
@@ -223,27 +222,27 @@ class Anaquote {
     })
   }
   optionArraysForWord(i) {
-    let word = this.word(i)
+    let word = this.selectedWord(i)
     let fullySelected = !word.includes('?')
-    let selections = this.selections
+    let selectedTrigrams = this.selectedTrigrams
     if (fullySelected) {
       // Act as if the word is unselected, to include all alternative word candidates.
-      let letters = this.letters.replaceAt(this.enumeration.wordStart(i), this.unselectedWordOption(i))
-      selections = letters.match(/..?.?/g)
+      let string = this.selectedString.replaceAt(this.enumeration.wordStart(i), this.unselectedWordOption(i))
+      selectedTrigrams = string.match(/..?.?/g)
     }
-    let availableTrigrams = this.trigrams.subtract(selections)
+    let availableTrigrams = this.trigrams.subtract(selectedTrigrams)
     let [first, last] = this.enumeration.trigramRangeForWord(i)
     return first.upTo(last).map(i => {
-      let selection = selections[i]
-      if (!selection.includes('?')) return [selection]
-      let regexp = new RegExp(selection.replace(/\?/g, '.'))
+      let trigram = selectedTrigrams[i]
+      if (!trigram.includes('?')) return [trigram]
+      let regexp = new RegExp(trigram.replace(/\?/g, '.'))
       return availableTrigrams.filter(t => regexp.test(t))
     })
   }
   wordCandidates(i) {
     let blank = this.enumeration.trimmedWordBlanks[i]
     let offset = this.enumeration.wordStart(i) % 3
-    let len = this.word(i).length
+    let len = this.selectedWord(i).length
     function permutationToWord(p) { return p.join('').substr(offset, len) }
     return this.constructor.permuteOptions(this.optionArraysForWord(i), perm => {
       let prefix = this.constructor.fillInBlankPrefix(blank, permutationToWord(perm))
@@ -251,7 +250,7 @@ class Anaquote {
     }).map(permutationToWord)
   }
   wordOptions(i) {
-    return [this.unselectedWordOption(i), this.word(i), ...this.wordCandidates(i)].sort().squeeze()
+    return [this.unselectedWordOption(i), this.selectedWord(i), ...this.wordCandidates(i)].sort().squeeze()
   }
 
   static fillInBlank(blank, fill) {
@@ -275,16 +274,16 @@ class Anaquote {
   static formatOptions(options, blank) {
     return options.map(o => [o, this.fillInBlank(blank, o)])
   }
-  formattedOptions(i) {
-    if (!this.enumeration) return this.options(i).map(o => [o, o])
-    return this.constructor.formatOptions(this.options(i), this.enumeration.blanks[i])
+  formattedTrigramOptions(i) {
+    if (!this.enumeration) return this.trigramOptions(i).map(o => [o, o])
+    return this.constructor.formatOptions(this.trigramOptions(i), this.enumeration.trigramBlanks[i])
   }
   formattedWordOptions(i) {
     return this.constructor.formatOptions(this.wordOptions(i), this.enumeration.wordBlanks[i])
   }
   quotation() {
-    if (!this.enumeration) return this.letters
-    return this.constructor.fillInBlank(this.enumeration.blankString, this.letters)
+    if (!this.enumeration) return this.selectedString
+    return this.constructor.fillInBlank(this.enumeration.blankString, this.selectedString)
   }
 }
 
@@ -321,25 +320,25 @@ class SelectionsView {
 }
 
 class TrigramSelectionView extends SelectionView {
-  modelOptions(i) { return this.model.formattedOptions(i) }
-  modelValue(i) { return this.model.selection(i) }
-  modelSelect(i, trigram) { this.model.select(i, trigram) }
+  modelOptions(i) { return this.model.formattedTrigramOptions(i) }
+  modelValue(i) { return this.model.selectedTrigram(i) }
+  modelSelect(i, trigram) { this.model.selectTrigram(i, trigram) }
 }
 
 class WordSelectionView extends SelectionView {
   modelOptions(i) { return this.model.formattedWordOptions(i) }
-  modelValue(i) { return this.model.word(i) }
+  modelValue(i) { return this.model.selectedWord(i) }
   modelSelect(i, word) { this.model.selectWord(i, word) }
 }
 
 class TrigramsView extends SelectionsView {
   get subviewClass () { return TrigramSelectionView }
-  selections() { return this.model.selections }
+  selections() { return this.model.selectedTrigrams }
 }
 
 class WordsView extends SelectionsView {
   get subviewClass () { return WordSelectionView }
-  selections() { return this.model.words }
+  selections() { return this.model.selectedWords }
 }
 
 class QuotationView {

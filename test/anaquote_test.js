@@ -129,12 +129,12 @@ test('blankString', () => {
   assert.equal('_____, _____!', new Enumeration('5, 5!').blankString)
 })
 
-test('blanks', () => {
-  assert.equal(['___'], new Enumeration('3').blanks)
-  assert.equal(['___', '__'], new Enumeration('5').blanks)
-  assert.equal(['*___', '__'], new Enumeration('*5').blanks)
-  assert.equal(['___', '__, _', '___', '_!'], new Enumeration('5, 5!').blanks)
-  assert.equal(['___!'], new Enumeration('3!').blanks)
+test('trigramBlanks', () => {
+  assert.equal(['___'], new Enumeration('3').trigramBlanks)
+  assert.equal(['___', '__'], new Enumeration('5').trigramBlanks)
+  assert.equal(['*___', '__'], new Enumeration('*5').trigramBlanks)
+  assert.equal(['___', '__, _', '___', '_!'], new Enumeration('5, 5!').trigramBlanks)
+  assert.equal(['___!'], new Enumeration('3!').trigramBlanks)
 })
 
 test('wordBlanks', () => {
@@ -167,11 +167,11 @@ test('error if more than one leftover', () => {
   assert.equal('More than one leftover: OR LD', ex.message)
 })
 
-test('setting letters unselects partial trigrams that now have no available matches', () => {
+test('setting selectedString unselects partial trigrams that now have no available matches', () => {
   let model = new Anaquote('SEL VES')
-  model.letters = 'S?????'
-  model.letters = 'S??SEL'
-  assert.equal('???SEL', model.letters)
+  model.selectedString = 'S?????'
+  model.selectedString = 'S??SEL'
+  assert.equal('???SEL', model.selectedString)
 })
 
 test('trigrams is an array', () => {
@@ -202,114 +202,105 @@ test('wordSet', () => {
   assert.same(wordSet, model.wordSet)
 })
 
-test('letters', () => {
-  assert.equal('?????????D', new Anaquote('HEL LOW ORL D').letters)
+test('selectedString', () => {
+  assert.equal('?????????D', new Anaquote('HEL LOW ORL D').selectedString)
 })
 
-test('selections', () => {
+test('selectedTrigrams', () => {
   let model = new Anaquote('HEL LOW ORL D')
-  assert.equal(['???', '???', '???', 'D'], model.selections)
-  model.letters = 'HELLOWORLD'
-  assert.equal(['HEL', 'LOW', 'ORL', 'D'], model.selections)
+  assert.equal(['???', '???', '???', 'D'], model.selectedTrigrams)
+  model.selectedString = 'HELLOWORLD'
+  assert.equal(['HEL', 'LOW', 'ORL', 'D'], model.selectedTrigrams)
 })
 
-test('words', () => {
+test('selectedWords', () => {
   let model = new Anaquote('HEL LOW ORL D', '5 5!')
-  assert.equal(['?????', '????D'], model.words)
-  model.letters = 'HELLOWORLD'
-  assert.equal(['HELLO', 'WORLD'], model.words)
+  assert.equal(['?????', '????D'], model.selectedWords)
+  model.selectedString = 'HELLOWORLD'
+  assert.equal(['HELLO', 'WORLD'], model.selectedWords)
 })
 
-test('selection', () => {
+test('selectedTrigram', () => {
   let model = new Anaquote('HEL LOW ORL D', '5 5!')
-  assert.equal('???', model.selection(0))
-  assert.equal('D', model.selection(3))
+  assert.equal('???', model.selectedTrigram(0))
+  assert.equal('D', model.selectedTrigram(3))
 })
 
-test('select', () => {
+test('selectTrigram', () => {
   let model = new Anaquote('HEL LOW ORL D', '5 5!')
-  model.select(0, 'HEL')
-  model.select(2, 'ORL')
-  assert.equal('HEL???ORLD', model.letters)
+  model.selectTrigram(0, 'HEL')
+  model.selectTrigram(2, 'ORL')
+  assert.equal('HEL???ORLD', model.selectedString)
 })
 
-test('isSelected', () => {
+test('availableTrigrams', () => {
   let model = new Anaquote('HEL LOW ORL D')
-  refute(model.isSelected(0))
-  refute(model.isSelected(1))
-  model.select(0, 'LOW')
-  assert(model.isSelected(0))
-  refute(model.isSelected(1))
+  assert.equal(['HEL', 'LOW', 'ORL'], model.availableTrigrams(0))
+  assert.equal(['D'], model.availableTrigrams(3))
 })
 
-test('available', () => {
+test('availableTrigrams includes selected', () => {
   let model = new Anaquote('HEL LOW ORL D')
-  assert.equal(['HEL', 'LOW', 'ORL'], model.available(0))
-  assert.equal(['D'], model.available(3))
+  model.selectTrigram(0, 'LOW')
+  assert.equal(['HEL', 'LOW', 'ORL'], model.availableTrigrams(0))
+  assert.equal(['HEL', 'ORL'], model.availableTrigrams(1))
 })
 
-test('available includes selected', () => {
+test('availableTrigrams filters if partially selected', () => {
   let model = new Anaquote('HEL LOW ORL D')
-  model.select(0, 'LOW')
-  assert.equal(['HEL', 'LOW', 'ORL'], model.available(0))
-  assert.equal(['HEL', 'ORL'], model.available(1))
+  model.selectTrigram(0, 'L??')
+  assert.equal(['LOW'], model.availableTrigrams(0))
 })
 
-test('available filters if partially selected', () => {
-  let model = new Anaquote('HEL LOW ORL D')
-  model.select(0, 'L??')
-  assert.equal(['LOW'], model.available(0))
-})
-
-test('available includes duplicates', () => {
+test('availableTrigrams includes duplicates', () => {
   let model = new Anaquote('FLY TSE TSE')
-  assert.equal(['FLY', 'TSE', 'TSE'], model.available(2))
-  model.select(0, 'TSE')
-  assert.equal(['FLY', 'TSE'], model.available(2))
-  model.select(1, 'TSE')
-  assert.equal(['FLY'], model.available(2))
+  assert.equal(['FLY', 'TSE', 'TSE'], model.availableTrigrams(2))
+  model.selectTrigram(0, 'TSE')
+  assert.equal(['FLY', 'TSE'], model.availableTrigrams(2))
+  model.selectTrigram(1, 'TSE')
+  assert.equal(['FLY'], model.availableTrigrams(2))
 })
 
-test('options', () => {
+test('trigramOptions', () => {
   let model = new Anaquote('HEL LOW ORL D')
-  assert.equal(['???', 'HEL', 'LOW', 'ORL'], model.options(0))
-  assert.equal(['D'], model.options(3))
+  assert.equal(['???', 'HEL', 'LOW', 'ORL'], model.trigramOptions(0))
+  assert.equal(['D'], model.trigramOptions(3))
 })
 
-test('options includes unselection and partial selection when trigram is partially selected', () => {
+test('trigramOptions includes unselection and partial selection when trigram is partially selected', () => {
   let model = new Anaquote('HEL LOW ORL D')
-  model.select(0, 'L??')
-  assert.equal(['???', 'L??', 'LOW'], model.options(0))
+  model.selectTrigram(0, 'L??')
+  assert.equal(['???', 'L??', 'LOW'], model.trigramOptions(0))
 })
 
-test('options omits duplicates', () => {
+test('trigramOptions omits duplicates', () => {
   model = new Anaquote('FLY TSE TSE')
-  assert.equal(['???', 'FLY', 'TSE'], model.options(0))
+  assert.equal(['???', 'FLY', 'TSE'], model.trigramOptions(0))
 })
 
-test('word', () => {
+test('selectedWord', () => {
   let model = new Anaquote('GOO DBY E', '4 3!')
-  assert.equal('????', model.word(0))
-  assert.equal('??E', model.word(1))
+  assert.equal('????', model.selectedWord(0))
+  assert.equal('??E', model.selectedWord(1))
 })
 
 test('selectWord partially selects trigrams on the border that have multiple candidates', () => {
   let model = new Anaquote('HEL LOW ORL DWI DOW', '5 5, 5.')
   model.selectWord(1, 'WORLD')
-  assert.equal('?????WORLD?????', model.letters)
+  assert.equal('?????WORLD?????', model.selectedString)
 })
 
 test('selectWord fully selects partial trigrams if they have only one unique candidate', () => {
   let model = new Anaquote('HEL LOW ORL DGR OUN DGR UEL', '5 5! 6 5.')
   model.selectWord(1, 'WORLD')
-  assert.equal('???LOWORLDGR?????????', model.letters)
+  assert.equal('???LOWORLDGR?????????', model.selectedString)
 })
 
 test('selectWord does not fully select partial trigrams if unselecting', () => {
   let model = new Anaquote('HEL LOW ORL D', '5, 5!')
-  model.select(1, 'LOW')
+  model.selectTrigram(1, 'LOW')
   model.selectWord(0, '?????')
-  assert.equal('?????W???D', model.letters)
+  assert.equal('?????W???D', model.selectedString)
 })
 
 test('unselectedWordOption', () => {
@@ -342,26 +333,26 @@ test('optionArraysForWord includes trigrams for each slot in word range', () => 
 
 test('optionArraysForWord excludes trigrams selected elsewhere', () => {
   let model = new Anaquote('LAY OFF OUT SET', '6 6')
-  model.select(2, 'LAY')
+  model.selectTrigram(2, 'LAY')
   assert.equal([['OFF', 'OUT', 'SET'], ['OFF', 'OUT', 'SET']], model.optionArraysForWord(0))
 })
 
 test('optionArraysForWord only includes selected trigrams in word range', () => {
   let model = new Anaquote('LAY OFF OUT SET', '6 6')
-  model.select(0, 'LAY')
+  model.selectTrigram(0, 'LAY')
   assert.equal([['LAY'], ['OFF', 'OUT', 'SET']], model.optionArraysForWord(0))
 })
 
 test('optionArraysForWord filters partially-selected trigrams', () => {
   let model = new Anaquote('ADG AGL IRL', '1 4 4')
-  model.select(0, 'A??')
+  model.selectTrigram(0, 'A??')
   assert.equal([['ADG', 'AGL'], ['ADG', 'AGL', 'IRL']], model.optionArraysForWord(1))
 })
 
 test('optionArraysForWord includes all unselected-elsewhere trigrams when word is fully selected', () => {
   let model = new Anaquote('LAY OFF OUT SET', '6 6')
   model.selectWord(0, 'LAYOFF')
-  model.select(2, 'OUT')
+  model.selectTrigram(2, 'OUT')
   assert.equal([['LAY', 'OFF', 'SET'], ['LAY', 'OFF', 'SET']], model.optionArraysForWord(0))
 })
 
@@ -373,15 +364,15 @@ test('optionArraysForWord includes the leftover even when word is fully selected
 
 test('optionArraysForWord filters partially-selected trigrams even when word is fully selected', () => {
   let model = new Anaquote('ADG AGL IRL', '1 4 4')
-  model.select(0, 'AGL')
-  model.select(1, 'AD?')
+  model.selectTrigram(0, 'AGL')
+  model.selectTrigram(1, 'AD?')
   assert.equal([['ADG', 'AGL'], ['ADG', 'AGL', 'IRL']], model.optionArraysForWord(1))
 })
 
 test('wordCandidates permutes options, prunes non-prefixes, and returns words', () => {
   let model = new Anaquote('LAY OFF OUT SET', '6 6', new WordSet(['LAYOFF', 'OFFLAY', 'OFFSET', 'SETOFF']))
   model.selectWord(0, 'LAYOFF')
-  model.select(2, 'OUT')
+  model.selectTrigram(2, 'OUT')
   assert.equal(['LAYOFF', 'OFFLAY', 'OFFSET', 'SETOFF'], model.wordCandidates(0))
 })
 
@@ -407,7 +398,7 @@ test('wordOptions filters through wordSet and includes an unselection option', (
 
 test('wordOptions includes partially selected word', () => {
   model = new Anaquote('HEL LOW ORL D', '5 5!', new WordSet(['HELLO', 'HELOR', 'WORLD', 'WHELD', 'LLOWD']))
-  model.select(1, 'LOW')
+  model.selectTrigram(1, 'LOW')
   assert.equal(['?????', '???LO', 'HELLO'], model.wordOptions(0))
   assert.equal(['????D', 'W???D', 'WHELD', 'WORLD'], model.wordOptions(1))
 })
@@ -420,7 +411,7 @@ test('wordOptions includes an unselection option when a word is fully selected',
 
 test('wordOptions includes current word even if not in the wordSet', () => {
   let model = new Anaquote('SEL VES', '6', new WordSet(['SELVES']))
-  model.select(0, 'VESSEL')
+  model.selectTrigram(0, 'VESSEL')
   assert.equal(['??????', 'SELVES', 'VESSEL'], model.wordOptions(0))
 })
 
@@ -448,14 +439,16 @@ test('formatOptions', () => {
   assert.equal([['HEL', 'HE L'], ['D', 'D? ?']], Anaquote.formatOptions(['HEL', 'D'], '__ _'))
 })
 
-test('formattedOptions', () => {
+test('formattedTrigramOptions', () => {
   let model = new Anaquote('HEL LOW ORL D', '5 5!')
-  assert.equal([['???', '?? ?'], ['HEL', 'HE L'], ['LOW', 'LO W'], ['ORL', 'OR L']], model.formattedOptions(1))
+  assert.equal([['???', '?? ?'], ['HEL', 'HE L'], ['LOW', 'LO W'], ['ORL', 'OR L']],
+               model.formattedTrigramOptions(1))
 })
 
-test('formattedOptions when enumeration is blank', () => {
+test('formattedTrigramOptions when enumeration is blank', () => {
   let model = new Anaquote('HEL LOW ORL D', '')
-  assert.equal([['???', '???'], ['HEL', 'HEL'], ['LOW', 'LOW'], ['ORL', 'ORL']], model.formattedOptions(1))
+  assert.equal([['???', '???'], ['HEL', 'HEL'], ['LOW', 'LOW'], ['ORL', 'ORL']],
+               model.formattedTrigramOptions(1))
 })
 
 test('formattedWordOptions', () => {
@@ -467,9 +460,9 @@ test('formattedWordOptions', () => {
 test('quotation', () => {
   let model = new Anaquote('HEL LOW ORL D', '5 5!')
   assert.equal('????? ????D!', model.quotation())
-  model.select(0, 'HEL')
-  model.select(1, 'LOW')
-  model.select(2, 'ORL')
+  model.selectTrigram(0, 'HEL')
+  model.selectTrigram(1, 'LOW')
+  model.selectTrigram(2, 'ORL')
   assert.equal('HELLO WORLD!', model.quotation())
 })
 
@@ -556,7 +549,7 @@ suite('TrigramSelectionView')
 test('extends SelectionView', () => {
   let view = new TrigramSelectionView(new Anaquote('HEL LOW ORL D', '5 5!'), 1)
   assert.instanceOf(SelectionView, view)
-  assert.equal(view.model.formattedOptions(1), view.modelOptions(1))
+  assert.equal(view.model.formattedTrigramOptions(1), view.modelOptions(1))
   assert.equal('???', view.modelValue(1))
   view.modelSelect(1, 'HEL')
   assert.equal('HEL', view.modelValue(1))
@@ -580,7 +573,7 @@ test('extends SelectionsView', () => {
   let view = new TrigramsView(model)
   assert.instanceOf(SelectionsView, view)
   assert.same(TrigramSelectionView, view.subviewClass)
-  assert.equal(model.selections, view.selections())
+  assert.equal(model.selectedTrigrams, view.selections())
 })
 
 suite('WordsView')
@@ -590,7 +583,7 @@ test('extends SelectionsView', () => {
   let view = new WordsView(model)
   assert.instanceOf(SelectionsView, view)
   assert.same(WordSelectionView, view.subviewClass)
-  assert.equal(model.words, view.selections())
+  assert.equal(model.selectedWords, view.selections())
 })
 
 suite('QuotationView')

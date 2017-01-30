@@ -55,54 +55,63 @@ class WordSet extends Set {
 
 class Blank {
   constructor (string) {
-    this.string = string
-
+    this._string = string
     this._tokens = string.split(/(\d+)/).map(token => {
       let len = Number.parseInt(token)
       return isNaN(len) ? token : len
     }).filter(s => s !== '')
-
     this.length = this._tokens.filter(t => typeof(t) === 'number').sum()
     this.formattedLength = this._tokens.sum(t => typeof(t) === 'number' ? t : t.length)
   }
+  toString() { return this._string }
+
+  trigramBlanks() {
+    let blanks = [], str = '', need = 3
+    this._tokens.forEach(t => {
+      if (typeof t === 'string') {
+        str += t
+      } else {
+        while (t > need) {
+          t -= need
+          blanks.push(new Blank(str + need))
+          str = ''
+          need = 3
+        }
+        str += t
+        if (t < need)
+          need -= t
+        else
+          need = 3
+      }
+    })
+    if (str.length > 0) blanks.push(new Blank(str))
+    return blanks
+  }
   fillIn(fill) {
-    let i = 0
-    let filled = []
+    let filled = [], i = 0
     for (let t of this._tokens) {
-      if (typeof(t) === 'number') {
+      if (typeof t === 'string') {
+        filled.push(t)
+      } else {
         filled.push(fill.substr(i, t))
         i += t
         if (i > fill.length) break
-      } else {
-        filled.push(t)
       }
     }
     return filled.join('')
   }
   trim() {
     // Allow smart-apostrophe, but our word list only has ASCII apostrophe.
-    let string = this.string.replace(/\u2019/g, "'")
-    return string.replace(/[^-_\/'0-9]/g, '')
-  }
-}
-
-class TrigramBlank {
-  constructor (string) {
-    this.string = string
-  }
-  fillIn(fill) {
-    let chars = fill.split('')
-    return this.string.split('').map(b => b === '_' ? chars.shift() : b).join('')
+    let string = this._string.replace(/\u2019/g, "'")
+    return new Blank(string.replace(/[^-_\/'0-9]/g, ''))
   }
 }
 
 class Enumeration {
   constructor (string) {
     this.blank = new Blank(string)
-    
+    this.trigramBlanks = this.blank.trigramBlanks()
     this.wordBlanks = string.trim().match(/[^\d]*\d+[^\s]*\s*/g).map(s => new Blank(s))
-
-    this.numWords = this.wordBlanks.length
 
     let total = 0
     this.wordStarts = this.wordBlanks.map(b => {
@@ -110,15 +119,12 @@ class Enumeration {
       total += b.length
       return start
     })
-
-    let blankString = this.blank.fillIn('_'.repeat(this.length))
-    this.trigramBlankStrings = blankString.match(/[^_]*_[^_]*_?[^_]*_?[^_]*/g)
-    this.trigramBlanks = this.trigramBlankStrings.map(s => new TrigramBlank(s))
-
-    this.trimmedBlanks = this.wordBlanks.map(b => new Blank(b.trim()))
+    this.trimmedBlanks = this.wordBlanks.map(b => b.trim())
   }
-  get string () { return this.blank.string }
+  toString() { return this.blank.toString() }
   get length () { return this.blank.length }
+  get numWords () { return this.wordBlanks.length }
+
   wordStart(i) {
     return this.wordStarts[i]
   }

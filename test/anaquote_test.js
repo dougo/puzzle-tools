@@ -100,6 +100,7 @@ test('trigramBlanks', () => {
   assert.equal(['*3', '2'], new Blank('*5').trigramBlanks())
   assert.equal(['3', '2, 1', '3', '1!'], new Blank('5, 5!').trigramBlanks())
   assert.equal(['3!'], new Blank('3!').trigramBlanks())
+  assert.equal(['3-', '3'], new Blank('3-3').trigramBlanks())
 })
 
 test('trim', () => {

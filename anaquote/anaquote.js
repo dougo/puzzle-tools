@@ -68,21 +68,17 @@ class Blank {
   trigramBlanks() {
     let blanks = [], str = '', need = 3
     this._tokens.forEach(t => {
-      if (typeof t === 'string') {
-        str += t
-      } else {
+      if (typeof t === 'number') {
         while (t > need) {
           t -= need
-          blanks.push(new Blank(str + need))
+          if (need > 0) str += need
+          blanks.push(new Blank(str))
           str = ''
           need = 3
         }
-        str += t
-        if (t < need)
-          need -= t
-        else
-          need = 3
+        need -= t
       }
+      str += t
     })
     if (str.length > 0) blanks.push(new Blank(str))
     return blanks

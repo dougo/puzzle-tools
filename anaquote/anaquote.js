@@ -12,8 +12,8 @@ Array.prototype.remove = function (x) {
 Array.prototype.subtract = function (array) {
   return array.reduce((remainder, x) => remainder.remove(x), this)
 }
-Array.prototype.sum = function () {
-  return this.reduce((sum, i) => sum + i, 0)
+Array.prototype.sum = function (fn = x => x) {
+  return this.reduce((sum, x) => sum + fn(x), 0)
 }
 Array.prototype.squeeze = function () {
   let s = []
@@ -53,57 +53,84 @@ class WordSet extends Set {
   }
 }
 
-class Enumeration {
+class Blank {
   constructor (string) {
     this.string = string
-    
-    this.tokens = string.trim().split(/(\d+)/).map(token => {
+
+    this._tokens = string.split(/(\d+)/).map(token => {
       let len = Number.parseInt(token)
       return isNaN(len) ? token : len
     }).filter(s => s !== '')
 
-    this.wordLengths = string.split(/\s+/).map(wordPattern => {
-      let lengths = wordPattern.match(/\d+/g)
-      return lengths === null ? false : lengths.map(s => Number.parseInt(s)).sum()
-    }).filter(l => l)
+    this.length = this._tokens.filter(t => typeof(t) === 'number').sum()
+    this.formattedLength = this._tokens.sum(t => typeof(t) === 'number' ? t : t.length)
+  }
+  fillIn(fill) {
+    let i = 0
+    let filled = []
+    for (let t of this._tokens) {
+      if (typeof(t) === 'number') {
+        filled.push(fill.substr(i, t))
+        i += t
+        if (i > fill.length) break
+      } else {
+        filled.push(t)
+      }
+    }
+    return filled.join('')
+  }
+  trim() {
+    // Allow smart-apostrophe, but our word list only has ASCII apostrophe.
+    let string = this.string.replace(/\u2019/g, "'")
+    return string.replace(/[^-_\/'0-9]/g, '')
+  }
+}
 
-    this.numWords = this.wordLengths.length
+class TrigramBlank {
+  constructor (string) {
+    this.string = string
+  }
+  fillIn(fill) {
+    let chars = fill.split('')
+    return this.string.split('').map(b => b === '_' ? chars.shift() : b).join('')
+  }
+}
+
+class Enumeration {
+  constructor (string) {
+    this.blank = new Blank(string)
+    
+    this.wordBlanks = string.trim().match(/[^\d]*\d+[^\s]*\s*/g).map(s => new Blank(s))
+
+    this.numWords = this.wordBlanks.length
 
     let total = 0
-    this.wordStarts = this.wordLengths.map(len => {
+    this.wordStarts = this.wordBlanks.map(b => {
       let start = total
-      total += len
+      total += b.length
       return start
     })
 
-    this.blankString = this.tokens.map(token => {
-      return typeof token === 'string' ? token : '_'.repeat(token)
-    }).join('')
+    let blankString = this.blank.fillIn('_'.repeat(this.length))
+    this.trigramBlankStrings = blankString.match(/[^_]*_[^_]*_?[^_]*_?[^_]*/g)
+    this.trigramBlanks = this.trigramBlankStrings.map(s => new TrigramBlank(s))
 
-    this.trigramBlanks = this.blankString.match(/[^_]*_[^_]*_?[^_]*_?[^_]*/g)
-
-    this.wordBlanks = this.blankString.match(/[^_]*_+[^\s]*\s*/g)
-
-    this.trimmedWordBlanks = this.wordBlanks.map(blank => {
-      blank = blank.replace(/\u2019/g, "'") // Allow smart-apostrophe, but our word list only has ASCII apostrophe.
-      return blank.replace(/[^-_\/'A-Z0-9]/g, '')
-    })
+    this.trimmedBlanks = this.wordBlanks.map(b => new Blank(b.trim()))
   }
-  wordLength(i) {
-    return this.wordLengths[i]
-  }
+  get string () { return this.blank.string }
+  get length () { return this.blank.length }
   wordStart(i) {
     return this.wordStarts[i]
   }
   word(i, string) {
-    return string.substr(this.wordStarts[i], this.wordLengths[i])
+    return string.substr(this.wordStarts[i], this.wordBlanks[i].length)
   }
   words(string) {
     return this.numWords.times.map(i => this.word(i, string))
   }
   trigramRangeForWord(i) {
     let start = this.wordStarts[i]
-    let len = this.wordLengths[i]
+    let len = this.wordBlanks[i].length
     let startTrigram = Math.floor(start / 3)
     let endTrigram = Math.floor((start + len - 1) / 3)
     return [startTrigram, endTrigram]
@@ -132,11 +159,10 @@ class Anaquote {
 
     if (enumeration) {
       this.enumeration = new Enumeration(enumeration)
-      let enumerationTotal = this.enumeration.wordLengths.sum()
       let trigramsTotal = this.trigrams.join('').length
-      if (enumerationTotal > trigramsTotal)
+      if (this.enumeration.length > trigramsTotal)
         throw new Error('Enumeration is too long!')
-      else if (enumerationTotal < trigramsTotal)
+      else if (this.enumeration.length < trigramsTotal)
         throw new Error('Enumeration is too short!')
     }
 
@@ -200,7 +226,7 @@ class Anaquote {
     })
   }
   unselectedWordOption(i) {
-    let len = this.enumeration.wordLength(i)
+    let len = this.enumeration.wordBlanks[i].length
     if (i === this.enumeration.numWords - 1) {
       // Don't unselect the leftover (the final non-trigram).
       let leftoverLength = this.selectedString.length % 3
@@ -240,39 +266,21 @@ class Anaquote {
     })
   }
   wordCandidates(i) {
-    let blank = this.enumeration.trimmedWordBlanks[i]
+    let blank = this.enumeration.trimmedBlanks[i]
     let offset = this.enumeration.wordStart(i) % 3
     let len = this.selectedWord(i).length
     function permutationToWord(p) { return p.join('').substr(offset, len) }
     return this.constructor.permuteOptions(this.optionArraysForWord(i), perm => {
-      let prefix = this.constructor.fillInBlankPrefix(blank, permutationToWord(perm))
-      return this.wordSet.hasPrefix(prefix, blank.length)
+      let prefix = blank.fillIn(permutationToWord(perm))
+      return this.wordSet.hasPrefix(prefix, blank.formattedLength)
     }).map(permutationToWord)
   }
   wordOptions(i) {
     return [this.unselectedWordOption(i), this.selectedWord(i), ...this.wordCandidates(i)].sort().squeeze()
   }
 
-  static fillInBlank(blank, fill) {
-    let letters = (fill + '???').split('')
-    return blank.split('').map(b => b === '_' ? letters.shift() : b).join('')
-  }
-  static fillInBlankPrefix(blank, fill) {
-    let letters = fill.split('')
-    let filled = []
-    for (let b of blank.split('')) {
-      if (b !== '_') {
-        filled.push(b)
-      } else if (letters.length === 0) {
-        break
-      } else {
-        filled.push(letters.shift())
-      }
-    }
-    return filled.join('')
-  }
   static formatOptions(options, blank) {
-    return options.map(o => [o, this.fillInBlank(blank, o)])
+    return options.map(o => [o, blank.fillIn(o)])
   }
   formattedTrigramOptions(i) {
     if (!this.enumeration) return this.trigramOptions(i).map(o => [o, o])
@@ -282,8 +290,7 @@ class Anaquote {
     return this.constructor.formatOptions(this.wordOptions(i), this.enumeration.wordBlanks[i])
   }
   quotation() {
-    if (!this.enumeration) return this.selectedString
-    return this.constructor.fillInBlank(this.enumeration.blankString, this.selectedString)
+    return this.enumeration ? this.enumeration.blank.fillIn(this.selectedString) : this.selectedString
   }
 }
 

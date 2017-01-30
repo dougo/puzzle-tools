@@ -23,6 +23,7 @@ test('subtract', () => {
 test('sum', () => {
   assert.equal(0, [].sum())
   assert.equal(6, [1, 2, 3].sum())
+  assert.equal(12, [1, 2, 3].sum(x => x * 2))
 })
 test('squeeze', () => {
   assert.equal([], [].squeeze())
@@ -72,23 +73,83 @@ test('hasPrefix', () => {
   refute(wordSet.hasPrefix('I', 1))
 })
 
+suite('Blank')
+
+test('string', () => {
+  assert.equal('foo', new Blank('foo').string)
+})
+
+test('length', () => {
+  assert.equal(3, new Blank('3').length)
+  assert.equal(5, new Blank(' 5, ').length)
+  assert.equal(4, new Blank("3'1").length)
+  assert.equal(0, new Blank('...').length)
+})
+
+test('formattedLength', () => {
+  assert.equal(3, new Blank('3').formattedLength)
+  assert.equal(8, new Blank(' 5, ').formattedLength)
+  assert.equal(5, new Blank("3'1").formattedLength)
+  assert.equal(3, new Blank('...').formattedLength)
+})
+
+test('trim', () => {
+  assert.equal('5-2', new Blank('*5-2  ').trim())
+  assert.equal('3/2', new Blank(' (3/2)').trim())
+  assert.equal("1'4", new Blank("1'4").trim())
+  assert.equal("'1'", new Blank("'1'").trim())
+  assert.equal("3'1", new Blank('3’1').trim())
+})
+
+test('fillIn', () => {
+  assert.equal('HELLO', new Blank('5').fillIn('HELLO'))
+  assert.equal('(AND/OR)', new Blank('(3/2)').fillIn('ANDOR'))
+})
+
+test('fillIn with prefix', () => {
+  let blank = new Blank('2-3')
+  assert.equal('', blank.fillIn(''))
+  assert.equal('A', blank.fillIn('A'))
+  assert.equal('AD-', blank.fillIn('AD'))
+  assert.equal('AD-H', blank.fillIn('ADH'))
+  assert.equal('AD-HOC', blank.fillIn('ADHOC'))
+})
+
+suite('TrigramBlank')
+
+test('string', () => {
+  assert.equal('_, __', new TrigramBlank('_, __').string)
+})
+
+test('fillIn', () => {
+  assert.equal('HEL', new TrigramBlank('___').fillIn('HEL'))
+  assert.equal('LO W', new TrigramBlank('__ _').fillIn('LOW'))
+  assert.equal('D!', new TrigramBlank('_!').fillIn('D'))
+})
+
 suite('Enumeration')
 
 test('string', () => {
   assert.equal('5, 5!', new Enumeration('5, 5!').string)
 })
 
-test('tokens', () => {
-  assert.equal([3], new Enumeration('3').tokens)
-  assert.equal([5, ', ', 5, '!'], new Enumeration('5, 5!').tokens)
-  assert.equal([5, ',  ', 5, '!'], new Enumeration('  5,  5! ').tokens)
+test('length', () => {
+  assert.equal(9, new Enumeration("1 3'1 4.").length)
 })
 
-test('wordLength', () => {
-  assert.equal(3, new Enumeration('3').wordLength(0))
-  assert.equal(5, new Enumeration('5, 6!').wordLength(0))
-  assert.equal(6, new Enumeration('5, 6!').wordLength(1))
-  assert.equal(4, new Enumeration("1 3'1 4.").wordLength(1))
+test('blank', () => {
+  let enumeration = new Enumeration('5, 5!')
+  assert.instanceOf(Blank, enumeration.blank)
+  assert.equal('5, 5!', enumeration.blank.string)
+})
+
+test('wordBlanks', () => {
+  let enumeration = new Enumeration("  3'1  ...\t5 ")
+  assert.equal(2, enumeration.wordBlanks.length)
+  assert.instanceOf(Blank, enumeration.wordBlanks[0])
+  assert.equal("3'1  ", enumeration.wordBlanks[0].string)
+  assert.instanceOf(Blank, enumeration.wordBlanks[1])
+  assert.equal('...\t5', enumeration.wordBlanks[1].string)
 })
 
 test('wordStart', () => {
@@ -124,29 +185,27 @@ test('trigramRangeForWord', () => {
   assert.equal([0, 2], new Enumeration('2 5').trigramRangeForWord(1))
 })
 
-test('blankString', () => {
-  assert.equal('___', new Enumeration('3').blankString)
-  assert.equal('_____, _____!', new Enumeration('5, 5!').blankString)
+test('trigramBlankStrings', () => {
+  assert.equal(['___'], new Enumeration('3').trigramBlankStrings)
+  assert.equal(['___', '__'], new Enumeration('5').trigramBlankStrings)
+  assert.equal(['*___', '__'], new Enumeration('*5').trigramBlankStrings)
+  assert.equal(['___', '__, _', '___', '_!'], new Enumeration('5, 5!').trigramBlankStrings)
+  assert.equal(['___!'], new Enumeration('3!').trigramBlankStrings)
 })
 
 test('trigramBlanks', () => {
-  assert.equal(['___'], new Enumeration('3').trigramBlanks)
-  assert.equal(['___', '__'], new Enumeration('5').trigramBlanks)
-  assert.equal(['*___', '__'], new Enumeration('*5').trigramBlanks)
-  assert.equal(['___', '__, _', '___', '_!'], new Enumeration('5, 5!').trigramBlanks)
-  assert.equal(['___!'], new Enumeration('3!').trigramBlanks)
+  let blanks = new Enumeration('*5').trigramBlanks
+  assert.equal(2, blanks.length)
+  assert.instanceOf(TrigramBlank, blanks[0])
+  assert.equal('*___', blanks[0].string)
+  assert.instanceOf(TrigramBlank, blanks[1])
+  assert.equal('__', blanks[1].string)
 })
 
-test('wordBlanks', () => {
-  assert.equal(['_____'], new Enumeration('5').wordBlanks)
-  assert.equal(['*_____'], new Enumeration('*5').wordBlanks)
-  assert.equal(['_____, ', '_____!'], new Enumeration('5, 5!').wordBlanks)
-  assert.equal(["_ ", "___'_ ", "*____*."], new Enumeration("1 3'1 *4*.").wordBlanks)
-  assert.equal(['HELLO, _____!'], new Enumeration('HELLO, 5!').wordBlanks)
-})
-
-test('trimmedWordBlanks', () => {
-  assert.equal(['_____-__', '___/__', "_'____", "___'_"], new Enumeration("*5-2  (3/2) 1'4 3’1 ").trimmedWordBlanks)
+test('trimmedBlanks', () => {
+  let blanks = new Enumeration("*5-2  (3/2) 1'4 3’1 ").trimmedBlanks
+  assert.instanceOf(Blank, blanks[0])
+  assert.equal(['5-2', '3/2', "1'4", "3'1"], blanks.map(b => b.string))
 })
 
 suite('Anaquote')
@@ -420,23 +479,8 @@ test('wordOptions is sorted', () => {
   assert.equal(['?????', 'FEAST', 'STIFE'], model.wordOptions(1))
 })
 
-test('fillInBlank', () => {
-  assert.equal('HEL', Anaquote.fillInBlank('___', 'HEL'))
-  assert.equal('D??', Anaquote.fillInBlank('___', 'D'))
-  assert.equal('LO W', Anaquote.fillInBlank('__ _', 'LOW'))
-  assert.equal('D? ?', Anaquote.fillInBlank('__ _', 'D'))
-  assert.equal('D!', Anaquote.fillInBlank('_!', 'D'))
-  assert.equal('H!', Anaquote.fillInBlank('_!', 'HEL'))
-})
-
-test('fillInBlankPrefix', () => {
-  assert.equal('', Anaquote.fillInBlankPrefix('_-___', ''))
-  assert.equal('X-', Anaquote.fillInBlankPrefix('_-___', 'X'))
-  assert.equal('X-R', Anaquote.fillInBlankPrefix('_-___', 'XR'))
-})
-
 test('formatOptions', () => {
-  assert.equal([['HEL', 'HE L'], ['D', 'D? ?']], Anaquote.formatOptions(['HEL', 'D'], '__ _'))
+  assert.equal([['HEL', 'HE L'], ['LOW', 'LO W']], Anaquote.formatOptions(['HEL', 'LOW'], new Blank('2 1')))
 })
 
 test('formattedTrigramOptions', () => {

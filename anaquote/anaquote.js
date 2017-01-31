@@ -139,9 +139,66 @@ class Enumeration {
   }
 }
 
+class QuotationSelect {
+  constructor (value) {
+    this.value = value
+  }
+  selectedTrigram(i) {
+    return this.value.substr(i*3, 3)
+  }
+  get selectedTrigrams () {
+    return this.value.match(/.../g)
+  }
+  selectTrigram(i, trigram) {
+    this.value = this.value.replaceAt(i*3, trigram)
+  }
+}
+
+class TrigramSelect {
+  constructor (trigrams, quotationSelect, i) {
+    this.trigrams = trigrams
+    this.quotationSelect = quotationSelect
+    this.i = i
+  }
+  get value () {
+    return this.quotationSelect.selectedTrigram(this.i)
+  }
+  select(value) {
+    this.quotationSelect.selectTrigram(this.i, value)
+  }
+  available() {
+    let trigram = this.value
+    let otherSelections = this.quotationSelect.selectedTrigrams.remove(trigram)
+    let avail = this.trigrams.subtract(otherSelections)
+    if (trigram.includes('?')) {
+      let regexp = new RegExp(trigram.replace(/\?/g, '.'))
+      avail = avail.filter(t => regexp.test(t))
+    }
+    return avail
+  }
+  options() {
+    let trigram = this.value
+    let opts = this.available()
+    if (trigram.includes('?')) opts.unshift(trigram)
+    return ['???', ...opts].squeeze()
+  }
+}
+
+class LeftoverSelect {
+  constructor (value) {
+    this.value = value
+  }
+  available() {
+    return [this.value]
+  }
+  options() {
+    return [this.value]
+  }
+}
+
 class Anaquote {
   constructor (trigrams, enumeration, wordSet = new WordSet()) {
-   this.trigrams = trigrams.trim().toUpperCase().split(/\s+/)
+    this.trigrams = trigrams.trim().toUpperCase().split(/\s+/)
 
     let leftover
     this.trigrams.forEach(t => {
@@ -157,7 +214,15 @@ class Anaquote {
       return a.localeCompare(b)
     })
 
-    this.selectedString = this.trigrams.map(t => t.length === 3 ? '???' : t).join('')
+    let selectedString = this.trigrams.map(t => t.length === 3 ? '???' : t).join('')
+
+    this.quotationSelect = new QuotationSelect(selectedString)
+
+    let fullTrigrams = this.trigrams.filter(t => t.length === 3)
+    this.trigramSelects = fullTrigrams.map((t, i) => {
+      return new TrigramSelect(fullTrigrams, this.quotationSelect, i)
+    })
+    if (leftover) this.trigramSelects.push(new LeftoverSelect(leftover))
 
     if (enumeration) {
       this.enumeration = new Enumeration(enumeration)
@@ -171,43 +236,31 @@ class Anaquote {
     this.wordSet = wordSet
   }
 
-  get selectedString () { return this._selectedString }
+  get selectedString () { return this.quotationSelect.value }
   set selectedString (string) {
-    this._selectedString = string
-    this.selectedTrigrams.forEach((t, i) => {
+    this.quotationSelect.value = string
+    this.trigramSelects.forEach(select => {
       // Unselect partially-selected trigrams that now have no options.
-      if (t !== '???' && t.includes('?') && this.availableTrigrams(i).length === 0)
-        string = string.replaceAt(i*3, '???')
+      let t = select.value
+      if (t !== '???' && t.includes('?') && select.available().length === 0)
+        select.select('???')
     })
-    this._selectedString = string
   }
 
   get selectedTrigrams () {
-    return this.selectedString.match(/..?.?/g)
+    return this.trigramSelects.map(s => s.value)
   }
   selectedTrigram(i) {
-    return this.selectedString.substr(i*3, 3)
+    return this.trigramSelects[i].value
   }
   selectTrigram(i, trigram) {
-    this.selectedString = this.selectedString.replaceAt(i*3, trigram)
+    this.trigramSelects[i].select(trigram)
   }
   availableTrigrams(i) {
-    let trigram = this.selectedTrigram(i)
-    if (trigram.length < 3) return [trigram]
-    let otherSelectedTrigrams = this.selectedTrigrams.remove(trigram)
-    let avail = this.trigrams.subtract(otherSelectedTrigrams)
-    if (trigram.includes('?')) {
-      let regexp = new RegExp(trigram.replace(/\?/g, '.'))
-      avail = avail.filter(t => regexp.test(t))
-    }
-    return avail
+    return this.trigramSelects[i].available()
   }
   trigramOptions(i) {
-    let trigram = this.selectedTrigram(i)
-    if (trigram.length < 3) return [trigram]
-    let opts = this.availableTrigrams(i)
-    if (trigram.includes('?')) opts.unshift(trigram)
-    return ['???', ...opts].squeeze()
+    return this.trigramSelects[i].options()
   }
 
   get selectedWords () {

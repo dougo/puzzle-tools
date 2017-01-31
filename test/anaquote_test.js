@@ -192,6 +192,120 @@ test('trimmedBlanks', () => {
   assert.equal(['5-2', '3/2', "1'4", "3'1"], blanks)
 })
 
+suite('QuotationSelect')
+
+test('value', () => {
+  assert.equal('???', new QuotationSelect('???').value)
+})
+
+test('selectedTrigram', () => {
+  let model = new QuotationSelect('HELLOWORLD')
+  assert.equal('HEL', model.selectedTrigram(0))
+  assert.equal('ORL', model.selectedTrigram(2))
+})
+
+test('selectedTrigrams', () => {
+  let model = new QuotationSelect('?????????D')
+  assert.equal(['???', '???', '???'], model.selectedTrigrams)
+  model.value = 'HELLOWORLD'
+  assert.equal(['HEL', 'LOW', 'ORL'], model.selectedTrigrams)
+})
+
+test('selectTrigram', () => {
+  let model = new QuotationSelect('?????????D')
+  model.selectTrigram(0, 'HEL')
+  assert.equal('HEL??????D', model.value)
+  model.selectTrigram(2, 'ORL')
+  assert.equal('HEL???ORLD', model.value)
+})
+
+suite('TrigramSelect')
+
+test('trigrams', () => {
+  assert.equal(['HEL', 'LOW', 'ORL'], new TrigramSelect(['HEL', 'LOW', 'ORL']).trigrams)
+})
+
+test('quotationSelect', () => {
+  let q = new QuotationSelect('YAY')
+  assert.same(q, new TrigramSelect([], q).quotationSelect)
+})
+
+test('i', () => {
+  assert.equal(42, new TrigramSelect([], null, 42).i)
+})
+
+test('value', () => {
+  assert.equal('LOW', new TrigramSelect([], new QuotationSelect('HELLOWORLD'), 1).value)
+})
+
+test('select', () => {
+  let q = new QuotationSelect('HEL???ORLD')
+  let model = new TrigramSelect([], q, 1)
+  model.select('LOW')
+  assert.equal('HELLOWORLD', q.value)
+})
+
+test('available', () => {
+  let model = new TrigramSelect(['HEL', 'LOW', 'ORL'], new QuotationSelect('?????????D'), 1)
+  assert.equal(['HEL', 'LOW', 'ORL'], model.available())
+})
+
+test('available when selected', () => {
+  let q = new QuotationSelect('LOW??????D')
+  let model = new TrigramSelect(['HEL', 'LOW', 'ORL'], q, 0)
+  let otherModel = new TrigramSelect(['HEL', 'LOW', 'ORL'], q, 1)
+  assert.equal(['HEL', 'LOW', 'ORL'], model.available())
+  assert.equal(['HEL', 'ORL'], otherModel.available())
+})
+
+test('available filters if partially selected', () => {
+  let model = new TrigramSelect(['HEL', 'LOW', 'ORL'], new QuotationSelect('HELLOWORLD'), 1)
+  model.select('L??')
+  assert.equal(['LOW'], model.available())
+})
+
+test('available includes duplicates', () => {
+  let q = new QuotationSelect('?????????')
+  let model = new TrigramSelect(['FLY', 'TSE', 'TSE'], q, 0)
+  assert.equal(['FLY', 'TSE', 'TSE'], model.available())
+  q.selectTrigram(1, 'TSE')
+  assert.equal(['FLY', 'TSE'], model.available())
+  q.selectTrigram(2, 'TSE')
+  assert.equal(['FLY'], model.available())
+})
+
+test('options', () => {
+  let q = new QuotationSelect('?????????D')
+  let model = new TrigramSelect(['HEL', 'LOW', 'ORL'], q, 0)
+  assert.equal(['???', 'HEL', 'LOW', 'ORL'], model.options())
+})
+
+test('options includes unselection and partial selection when trigram is partially selected', () => {
+  let q = new QuotationSelect('???L?????D')
+  let model = new TrigramSelect(['HEL', 'LOW', 'ORL'], q, 1)
+  assert.equal(['???', 'L??', 'LOW'], model.options())
+})
+
+test('options omits duplicates', () => {
+  let q = new QuotationSelect('?????????')
+  let model = new TrigramSelect(['FLY', 'TSE', 'TSE'], q, 0)
+  assert.equal(['???', 'FLY', 'TSE'], model.options())
+})
+
+suite('LeftoverSelect')
+
+test('value', () => {
+  assert.equal('D', new LeftoverSelect('D').value)
+})
+
+test('available', () => {
+  assert.equal(['D'], new LeftoverSelect('D').available())
+})
+
+test('options', () => {
+  assert.equal(['D'], new LeftoverSelect('D').options())
+})
+
 suite('Anaquote')
 
 test('error if total length of trigrams differs from enumeration', () => {
@@ -247,6 +361,29 @@ test('wordSet', () => {
 
 test('selectedString', () => {
   assert.equal('?????????D', new Anaquote('HEL LOW ORL D').selectedString)
+})
+
+test('quotationSelect', () => {
+  let model = new Anaquote('HEL LOW ORL D')
+  assert.instanceOf(QuotationSelect, model.quotationSelect)
+  assert.equal('?????????D', model.quotationSelect.value)
+})
+
+test('trigramSelects', () => {
+  let model = new Anaquote('HOO RAY')
+  let selects = model.trigramSelects
+  assert.equal(2, selects.length)
+  assert.instanceOf(TrigramSelect, selects[0])
+  assert.equal(['HOO', 'RAY'], selects[0].trigrams)
+  assert.same(model.quotationSelect, selects[0].quotationSelect)
+  assert.equal(0, selects[0].i)
+})
+
+test('trigramSelects includes LeftoverSelect', () => {
+  let selects = new Anaquote('HEL LOW ORL D').trigramSelects
+  assert.equal(4, selects.length)
+  assert.instanceOf(LeftoverSelect, selects[3])
+  assert.equal('D', selects[3].value)
 })
 
 test('selectedTrigrams', () => {

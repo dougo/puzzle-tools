@@ -149,7 +149,7 @@ class QuotationSelect {
     this.enumeration = enumeration
     let blanks = enumeration ? enumeration.trigramBlanks : []
     this.trigramSelects = trigrams.map((t, i) => {
-      return new TrigramSelect(trigrams, this, i, blanks[i])
+      return new TrigramSelect(trigrams, this, i*3, blanks[i])
     })
   }
   get value () { return this._value }
@@ -159,17 +159,11 @@ class QuotationSelect {
       // Unselect partially-selected trigrams that now have no options.
       let t = select.value
       if (t !== '???' && t.includes('?') && select.available().length === 0)
-        this._value = this._value.replaceAt(select.i*3, '???')
+        this._value = this._value.replaceAt(select.i, '???')
     })
-  }
-  selectedTrigram(i) {
-    return this.value.substr(i*3, 3)
   }
   get selectedTrigrams () {
     return this.value.match(/.../g)
-  }
-  selectTrigram(i, trigram) {
-    this.value = this.value.replaceAt(i*3, trigram)
   }
 }
 
@@ -181,10 +175,10 @@ class TrigramSelect {
     this.blank = blank
   }
   get value () {
-    return this.quotationSelect.selectedTrigram(this.i)
+    return this.quotationSelect.value.substr(this.i, 3)
   }
   select(value) {
-    this.quotationSelect.selectTrigram(this.i, value)
+    this.quotationSelect.value = this.quotationSelect.value.replaceAt(this.i, value)
   }
   available() {
     let trigram = this.value

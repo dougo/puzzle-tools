@@ -221,6 +221,7 @@ test('trigramSelects', () => {
   assert.equal(['HOO', 'RAY'], selects[0].trigrams)
   assert.same(model, selects[0].quotationSelect)
   assert.equal(0, selects[0].i)
+  assert.equal(3, selects[1].i)
   assert.equal(undefined, selects[0].blank)
 })
 
@@ -236,25 +237,11 @@ test('setting value unselects partial trigrams that now have no available matche
   assert.equal('???SEL', model.value)
 })
 
-test('selectedTrigram', () => {
-  let model = new QuotationSelect('HELLOWORLD')
-  assert.equal('HEL', model.selectedTrigram(0))
-  assert.equal('ORL', model.selectedTrigram(2))
-})
-
 test('selectedTrigrams', () => {
   let model = new QuotationSelect('?????????D')
   assert.equal(['???', '???', '???'], model.selectedTrigrams)
   model.value = 'HELLOWORLD'
   assert.equal(['HEL', 'LOW', 'ORL'], model.selectedTrigrams)
-})
-
-test('selectTrigram', () => {
-  let model = new QuotationSelect('?????????D')
-  model.selectTrigram(0, 'HEL')
-  assert.equal('HEL??????D', model.value)
-  model.selectTrigram(2, 'ORL')
-  assert.equal('HEL???ORLD', model.value)
 })
 
 suite('TrigramSelect')
@@ -273,48 +260,48 @@ test('i', () => {
 })
 
 test('blank', () => {
-  assert.equal(undefined, new TrigramSelect([], null, 42).blank)
+  assert.equal(undefined, new TrigramSelect([], null, 0).blank)
   let b = new Blank('2 1')
-  assert.same(b, new TrigramSelect([], null, 42, b).blank)
+  assert.same(b, new TrigramSelect([], null, 0, b).blank)
 })
 
 test('value', () => {
-  assert.equal('LOW', new TrigramSelect([], new QuotationSelect('HELLOWORLD'), 1).value)
+  assert.equal('LOW', new TrigramSelect([], new QuotationSelect('HELLOWORLD'), 3).value)
 })
 
 test('select', () => {
   let q = new QuotationSelect('HEL???ORLD')
-  let model = new TrigramSelect([], q, 1)
+  let model = new TrigramSelect([], q, 3)
   model.select('LOW')
   assert.equal('HELLOWORLD', q.value)
 })
 
 test('available', () => {
-  let model = new TrigramSelect(['HEL', 'LOW', 'ORL'], new QuotationSelect('?????????D'), 1)
+  let model = new TrigramSelect(['HEL', 'LOW', 'ORL'], new QuotationSelect('?????????D'), 3)
   assert.equal(['HEL', 'LOW', 'ORL'], model.available())
 })
 
 test('available when selected', () => {
   let q = new QuotationSelect('LOW??????D')
   let model = new TrigramSelect(['HEL', 'LOW', 'ORL'], q, 0)
-  let otherModel = new TrigramSelect(['HEL', 'LOW', 'ORL'], q, 1)
+  let otherModel = new TrigramSelect(['HEL', 'LOW', 'ORL'], q, 3)
   assert.equal(['HEL', 'LOW', 'ORL'], model.available())
   assert.equal(['HEL', 'ORL'], otherModel.available())
 })
 
 test('available filters if partially selected', () => {
-  let model = new TrigramSelect(['HEL', 'LOW', 'ORL'], new QuotationSelect('HELLOWORLD'), 1)
+  let model = new TrigramSelect(['HEL', 'LOW', 'ORL'], new QuotationSelect('HELLOWORLD'), 3)
   model.select('L??')
   assert.equal(['LOW'], model.available())
 })
 
 test('available includes duplicates', () => {
   let q = new QuotationSelect('?????????')
-  let model = new TrigramSelect(['FLY', 'TSE', 'TSE'], q, 0)
+  let model = new TrigramSelect(['FLY', 'TSE', 'TSE'], q, 6)
   assert.equal(['FLY', 'TSE', 'TSE'], model.available())
-  q.selectTrigram(1, 'TSE')
+  q.value = 'TSE??????'
   assert.equal(['FLY', 'TSE'], model.available())
-  q.selectTrigram(2, 'TSE')
+  q.value = 'TSETSE???'
   assert.equal(['FLY'], model.available())
 })
 
@@ -326,7 +313,7 @@ test('options', () => {
 
 test('options includes unselection and partial selection when trigram is partially selected', () => {
   let q = new QuotationSelect('???L?????D')
-  let model = new TrigramSelect(['HEL', 'LOW', 'ORL'], q, 1)
+  let model = new TrigramSelect(['HEL', 'LOW', 'ORL'], q, 3)
   assert.equal(['???', 'L??', 'LOW'], model.options())
 })
 
@@ -338,16 +325,15 @@ test('options omits duplicates', () => {
 
 test('formattedOptions', () => {
   let q = new QuotationSelect('?????????D')
-  let model = new TrigramSelect(['HEL', 'LOW', 'ORL'], q, 1, new Blank('2 1'))
+  let model = new TrigramSelect(['HEL', 'LOW', 'ORL'], q, 3, new Blank('2 1'))
   assert.equal([['???', '?? ?'], ['HEL', 'HE L'], ['LOW', 'LO W'], ['ORL', 'OR L']], model.formattedOptions())
 })
 
 test('formattedOptions with no blank', () => {
   let q = new QuotationSelect('?????????D')
-  let model = new TrigramSelect(['HEL', 'LOW', 'ORL'], q, 1)
+  let model = new TrigramSelect(['HEL', 'LOW', 'ORL'], q, 3)
   assert.equal([['???', '???'], ['HEL', 'HEL'], ['LOW', 'LOW'], ['ORL', 'ORL']], model.formattedOptions())
 })
-
 
 suite('LeftoverSelect')
 

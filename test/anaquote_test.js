@@ -183,6 +183,11 @@ test('value', () => {
   assert.equal('???', new QuotationSelect('???').value)
 })
 
+test('formattedValue', () => {
+  assert.equal('HELLOWORLD', new QuotationSelect('HELLOWORLD').formattedValue)
+  assert.equal('HELLO, WORLD!', new QuotationSelect('HELLOWORLD', [], new Enumeration('5, 5!')).formattedValue)
+})
+
 test('trigrams', () => {
   assert.equal([], new QuotationSelect('', []).trigrams)
   assert.equal(['HOO', 'RAY'], new QuotationSelect('??????', ['HOO', 'RAY']).trigrams)
@@ -566,10 +571,6 @@ test('wordSet', () => {
   assert.same(wordSet, model.wordSet)
 })
 
-test('selectedString', () => {
-  assert.equal('?????????D', new Anaquote('HEL LOW ORL D').selectedString)
-})
-
 test('quotationSelect', () => {
   let model = new Anaquote('HEL LOW ORL D')
   assert.instanceOf(QuotationSelect, model.quotationSelect)
@@ -612,18 +613,6 @@ test('wordSelects', () => {
   assert.equal(3, selects[1].length)
   assert.same(model.wordSet, selects[0].wordSet)
   assert.same(model.enumeration.wordBlanks[0], selects[0].blank)
-})
-
-test('quotation', () => {
-  let model = new Anaquote('HEL LOW ORL D', '5 5!')
-  assert.equal('????? ????D!', model.quotation())
-  model.quotationSelect.value = 'HELLOWORLD'
-  assert.equal('HELLO WORLD!', model.quotation())
-})
-
-test('quotation when enumeration is blank', () => {
-  let model = new Anaquote('HEL LOW ORL D', '')
-  assert.equal('?????????D', model.quotation())
 })
 
 suite('SelectView')
@@ -698,16 +687,16 @@ test('render renders subviews', () => {
 suite('QuotationView')
 
 test('constructor', () => {
-  let model = new Anaquote('HEL LOW ORL D', '5 5!')
+  let model = new QuotationSelect('HELLOWORLD')
   let view = new QuotationView(model)
   assert.same(model, view.model)
   assert.is('p', view.$el)
 })
 
 test('render', () => {
-  let view = new QuotationView(new Anaquote('HEL LOW ORL D', '5 5!'))
+  let view = new QuotationView(new QuotationSelect('HELLOWORLD', [], new Enumeration('5 5!')))
   assert.same(view, view.render())
-  assert.hasText(view.model.quotation(), view.$el)
+  assert.hasText(view.model.formattedValue, view.$el)
 })
 
 suite('AnaquoteView')
@@ -719,7 +708,7 @@ test('constructor', () => {
   assert.same(model, view.model)
 
   assert.instanceOf(QuotationView, view.quotation)
-  assert.same(model, view.quotation.model)
+  assert.same(model.quotationSelect, view.quotation.model)
   assert.same(view.quotation.$el[0], view.$el.children()[0])
 
   assert.instanceOf(SelectsView, view.trigrams)
@@ -736,14 +725,14 @@ test('render', () => {
   assert.same(view, view.render())
   refute.empty(view.trigrams.subviews[0].$options)
   refute.empty(view.words.subviews[0].$options)
-  assert.hasText(view.model.quotation(), view.quotation.$el)
+  assert.hasText('????? ????D!', view.quotation.$el)
 })
 
 test('selecting an option re-renders', () => {
   let view = new AnaquoteView(new Anaquote('HEL LOW ORL D', '5 5!')).render()
   view.trigrams.subviews[1].$el.val('LOW').change()
   refute.includes(view.trigrams.subviews[0].$options.map(o => o.value), 'LOW')
-  assert.hasText(view.model.quotation(), view.quotation.$el)
+  assert.hasText('???LO W???D!', view.quotation.$el)
 })
 
 test('omits words view when enumeration is blank', () => {
@@ -865,7 +854,7 @@ test('clicking Start makes a new rendered AnaquoteView', () => {
   assert.equal(['HEL', 'LOW', 'ORL'], view.anaquote.model.trigrams)
   assert.equal('5 5!', view.anaquote.model.enumeration)
   assert.same(view.anaquote.$el[0], view.$el.children().last()[0])
-  assert.hasText(view.anaquote.model.quotation(), view.anaquote.quotation.$el)
+  assert.hasText('????? ????D!', view.anaquote.quotation.$el)
   assert.instanceOf(WordSet, view.anaquote.model.wordSet)
 
   view.words = new WordSet(['HELLO', 'WORLD'])

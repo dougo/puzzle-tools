@@ -158,6 +158,9 @@ class QuotationSelect {
         this._value = this._value.replaceAt(select.i, '???')
     })
   }
+  get formattedValue () {
+    return this.enumeration ? this.enumeration.blank.fillIn(this.value) : this.value
+  }
   get selectedTrigrams () {
     return this.value.match(/.../g)
   }
@@ -322,12 +325,6 @@ class Anaquote {
         return new WordSelect(this.quotationSelect, offset, blank, this.wordSet)
       })
   }
-
-  get selectedString () { return this.quotationSelect.value }
-
-  quotation() {
-    return this.enumeration ? this.enumeration.blank.fillIn(this.selectedString) : this.selectedString
-  }
 }
 
 class SelectView {
@@ -366,7 +363,7 @@ class QuotationView {
     this.$el = $('<p>')
   }
   render() {
-    this.$el.text(this.model.quotation())
+    this.$el.text(this.model.formattedValue)
     return this
   }
 }
@@ -375,7 +372,7 @@ class AnaquoteView {
   constructor (model) {
     this.$el = $('<div>')
     this.model = model
-    this.quotation = new QuotationView(model)
+    this.quotation = new QuotationView(model.quotationSelect)
     this.$el.append(this.quotation.$el)
     this.trigrams = new SelectsView(model.trigramSelects)
     this.$el.append(this.trigrams.$el)

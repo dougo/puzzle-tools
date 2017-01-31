@@ -140,8 +140,22 @@ class Enumeration {
 }
 
 class QuotationSelect {
-  constructor (value) {
-    this.value = value
+  constructor (value, trigrams = []) {
+    this._value = value
+    this.trigrams = trigrams
+    this.trigramSelects = trigrams.map((t, i) => {
+      return new TrigramSelect(trigrams, this, i)
+    })
+  }
+  get value () { return this._value }
+  set value (value) {
+    this._value = value
+    this.trigramSelects.forEach(select => {
+      // Unselect partially-selected trigrams that now have no options.
+      let t = select.value
+      if (t !== '???' && t.includes('?') && select.available().length === 0)
+        this._value = this._value.replaceAt(select.i*3, '???')
+    })
   }
   selectedTrigram(i) {
     return this.value.substr(i*3, 3)
@@ -213,12 +227,10 @@ class Anaquote {
 
     let selectedString = '?'.repeat(trigrams.length * 3) + leftover
 
-    this.quotationSelect = new QuotationSelect(selectedString)
+    this.quotationSelect = new QuotationSelect(selectedString, trigrams)
 
-    this.trigramSelects = trigrams.map((t, i) => {
-      return new TrigramSelect(trigrams, this.quotationSelect, i)
-    })
-    if (leftover) this.trigramSelects.push(new LeftoverSelect(leftover))
+    this.trigramSelects = this.quotationSelect.trigramSelects
+    if (leftover) this.trigramSelects = [...this.trigramSelects, new LeftoverSelect(leftover)]
 
     if (enumeration) {
       this.enumeration = new Enumeration(enumeration)
@@ -232,15 +244,7 @@ class Anaquote {
   }
 
   get selectedString () { return this.quotationSelect.value }
-  set selectedString (string) {
-    this.quotationSelect.value = string
-    this.trigramSelects.forEach(select => {
-      // Unselect partially-selected trigrams that now have no options.
-      let t = select.value
-      if (t !== '???' && t.includes('?') && select.available().length === 0)
-        select.select('???')
-    })
-  }
+  set selectedString (string) { this.quotationSelect.value = string }
 
   get selectedTrigrams () {
     return this.trigramSelects.map(s => s.value)

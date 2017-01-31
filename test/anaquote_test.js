@@ -64,10 +64,6 @@ test('upTo', () => {
   assert.equal([1, 2, 3], (1).upTo(3))
   assert.equal([], (3).upTo(1))
 })
-test('times', () => {
-  assert.equal([0, 1, 2], (3).times)
-  assert.equal([], (-3).times)
-})
 
 suite('WordSet')
 
@@ -618,82 +614,10 @@ test('wordSelects', () => {
   assert.same(model.enumeration.wordBlanks[0], selects[0].blank)
 })
 
-test('selectedTrigrams', () => {
-  let model = new Anaquote('HEL LOW ORL D')
-  assert.equal(['???', '???', '???', 'D'], model.selectedTrigrams)
-  model.quotationSelect.value = 'HELLOWORLD'
-  assert.equal(['HEL', 'LOW', 'ORL', 'D'], model.selectedTrigrams)
-})
-
-test('selectedWords', () => {
-  let model = new Anaquote('HEL LOW ORL D', '5 5!')
-  assert.equal(['?????', '????D'], model.selectedWords)
-  model.quotationSelect.value = 'HELLOWORLD'
-  assert.equal(['HELLO', 'WORLD'], model.selectedWords)
-})
-
-test('selectedTrigram', () => {
-  let model = new Anaquote('HEL LOW ORL D', '5 5!')
-  assert.equal('???', model.selectedTrigram(0))
-  assert.equal('D', model.selectedTrigram(3))
-})
-
-test('selectTrigram', () => {
-  let model = new Anaquote('HEL LOW ORL D', '5 5!')
-  model.selectTrigram(0, 'HEL')
-  model.selectTrigram(2, 'ORL')
-  assert.equal('HEL???ORLD', model.selectedString)
-})
-
-test('selectedWord', () => {
-  let model = new Anaquote('GOO DBY E', '4 3!')
-  assert.equal('????', model.selectedWord(0))
-  assert.equal('??E', model.selectedWord(1))
-})
-
-test('selectWord partially selects trigrams on the border that have multiple candidates', () => {
-  let model = new Anaquote('HEL LOW ORL DWI DOW', '5 5, 5.')
-  model.selectWord(1, 'WORLD')
-  assert.equal('?????WORLD?????', model.selectedString)
-})
-
-test('selectWord fully selects partial trigrams if they have only one unique candidate', () => {
-  let model = new Anaquote('HEL LOW ORL DGR OUN DGR UEL', '5 5! 6 5.')
-  model.selectWord(1, 'WORLD')
-  assert.equal('???LOWORLDGR?????????', model.selectedString)
-})
-
-test('selectWord does not fully select partial trigrams if unselecting', () => {
-  let model = new Anaquote('HEL LOW ORL D', '5, 5!')
-  model.selectTrigram(1, 'LOW')
-  model.selectWord(0, '?????')
-  assert.equal('?????W???D', model.selectedString)
-})
-
-test('formattedTrigramOptions', () => {
-  let model = new Anaquote('HEL LOW ORL D', '5 5!')
-  assert.equal([['???', '?? ?'], ['HEL', 'HE L'], ['LOW', 'LO W'], ['ORL', 'OR L']],
-               model.formattedTrigramOptions(1))
-})
-
-test('formattedTrigramOptions when enumeration is blank', () => {
-  let model = new Anaquote('HEL LOW ORL D', '')
-  assert.equal([['???', '???'], ['HEL', 'HEL'], ['LOW', 'LOW'], ['ORL', 'ORL']],
-               model.formattedTrigramOptions(1))
-})
-
-test('formattedWordOptions', () => {
-  let model = new Anaquote('GOO DBY E', '4 3!', new WordSet(['GOOD', 'DBYG', 'OOE', 'BYE']))
-  assert.equal([['????', '???? '], ['DBYG', 'DBYG '], ['GOOD', 'GOOD ']], model.formattedWordOptions(0))
-  assert.equal([['??E', '??E!'], ['BYE', 'BYE!'], ['OOE', 'OOE!']], model.formattedWordOptions(1))
-})
-
 test('quotation', () => {
   let model = new Anaquote('HEL LOW ORL D', '5 5!')
   assert.equal('????? ????D!', model.quotation())
-  model.selectTrigram(0, 'HEL')
-  model.selectTrigram(1, 'LOW')
-  model.selectTrigram(2, 'ORL')
+  model.quotationSelect.value = 'HELLOWORLD'
   assert.equal('HELLO WORLD!', model.quotation())
 })
 
@@ -702,33 +626,35 @@ test('quotation when enumeration is blank', () => {
   assert.equal('?????????D', model.quotation())
 })
 
-suite('SelectionView')
+suite('SelectView')
 
-class TestSelectionView extends SelectionView {
-  modelOptions(i) { return [['?', '?'], [`${i}`, `${i},  `]] }
-  modelValue(i) { return this.value || `${i}` }
-  modelSelect(i, value) { this.value = value }
+class TestSelect {
+  constructor (i) {
+    this.i = i
+    this.value = `${this.i}`
+  }
+  formattedOptions() { return [['?', '?'], [`${this.i}`, `${this.i},  `]] }
+  select(value) { this.value = value }
 }
 
 test('constructor', () => {
-  let model = new Anaquote('HEL LOW ORL D')
-  let view = new TestSelectionView(model, 0)
+  let model = new TestSelect(0)
+  let view = new SelectView(model)
   assert.same(model, view.model)
-  assert.equal(0, view.i)
   assert.is('select', view.$el)
   assert.hasClass('mono', view.$el)
   assert.empty(view.$el.children())
 })
 
 test('$options', () => {
-  let view = new TestSelectionView()
+  let view = new SelectView()
   assert.empty(view.$options)
   view.$el.append('<option>foo</option>', '<option>bar</option>')
   assert.equal(['foo', 'bar'], view.$options.map(o => o.value))
 })
 
 test('render', () => {
-  let view = new TestSelectionView(new Anaquote('HEL LOW ORL D'), 0)
+  let view = new SelectView(new TestSelect(0))
   assert.equal(view, view.render())
   assert.equal(['?', '0'], view.$options.map(o => o.value))
   assert.equal('0,&nbsp;&nbsp;', view.$options[1].text)
@@ -739,82 +665,34 @@ test('render', () => {
 })
 
 test('selecting an option updates the model', () => {
-  let view = new TestSelectionView(new Anaquote('HEL LOW ORL D'), 0)
+  let view = new SelectView(new TestSelect(0))
   let $el = view.render().$el
   $el.val('?').change()
-  assert.equal('?', view.modelValue(0))
+  assert.equal('?', view.model.value)
 })
 
-suite('SelectionsView')
-
-class TestSelectionsView extends SelectionsView {
-  get subviewClass () { return TestSelectionView }
-  selections() { return [0,1,2,3] }
-}
+suite('SelectsView')
 
 test('constructor', () => {
-  let model = new Anaquote('HEL LOW ORL D', '5 5!')
-  let view = new TestSelectionsView(model)
+  let selects = [0,1,2,3].map(i => new TestSelect(i))
+  let view = new SelectsView(selects)
   assert.is('p', view.$el)
-  assert.same(model, view.model)
+  assert.equal(selects, view.subviews.map(v => v.model))
   assert.equal(4, view.subviews.length)
 
   let subview = view.subviews[0]
-  assert.instanceOf(TestSelectionView, subview)
-  assert.same(view.model, subview.model)
-  assert.equal(0, subview.i)
+  assert.instanceOf(SelectView, subview)
+  assert.same(selects[0], subview.model)
 
   assert.equal(4, view.$el.children().length)
   assert.same(subview.$el[0], view.$el.children()[0])
 })
 
 test('render renders subviews', () => {
-  let view = new TestSelectionsView(new Anaquote('HEL LOW ORL D', '5 5!'))
+  let view = new SelectsView([0,1,2,3].map(i => new TestSelect(i)))
   assert.same(view, view.render())
   assert.equal('0', view.subviews[0].$options[1].value)
   assert.equal('1', view.subviews[1].$options[1].value)
-})
-
-suite('TrigramSelectionView')
-
-test('extends SelectionView', () => {
-  let view = new TrigramSelectionView(new Anaquote('HEL LOW ORL D', '5 5!'), 1)
-  assert.instanceOf(SelectionView, view)
-  assert.equal(view.model.formattedTrigramOptions(1), view.modelOptions(1))
-  assert.equal('???', view.modelValue(1))
-  view.modelSelect(1, 'HEL')
-  assert.equal('HEL', view.modelValue(1))
-})
-
-suite('WordSelectionView')
-
-test('extends SelectionView', () => {
-  let view = new WordSelectionView(new Anaquote('HEL LOW ORL D', '5 5!', new WordSet(['HELLO'])), 0)
-  assert.instanceOf(SelectionView, view)
-  assert.equal(view.model.formattedWordOptions(1), view.modelOptions(1))
-  assert.equal('?????', view.modelValue(0))
-  view.modelSelect(0, 'HELLO')
-  assert.equal('HELLO', view.modelValue(0))
-})
-
-suite('TrigramsView')
-
-test('extends SelectionsView', () => {
-  let model = new Anaquote('HEL LOW ORL D', '5 5!')
-  let view = new TrigramsView(model)
-  assert.instanceOf(SelectionsView, view)
-  assert.same(TrigramSelectionView, view.subviewClass)
-  assert.equal(model.selectedTrigrams, view.selections())
-})
-
-suite('WordsView')
-
-test('extends SelectionsView', () => {
-  let model = new Anaquote('HEL LOW ORL D', '5 5!')
-  let view = new WordsView(model)
-  assert.instanceOf(SelectionsView, view)
-  assert.same(WordSelectionView, view.subviewClass)
-  assert.equal(model.selectedWords, view.selections())
 })
 
 suite('QuotationView')
@@ -844,12 +722,12 @@ test('constructor', () => {
   assert.same(model, view.quotation.model)
   assert.same(view.quotation.$el[0], view.$el.children()[0])
 
-  assert.instanceOf(TrigramsView, view.trigrams)
-  assert.same(model, view.trigrams.model)
+  assert.instanceOf(SelectsView, view.trigrams)
+  assert.equal(model.trigramSelects, view.trigrams.subviews.map(v => v.model))
   assert.same(view.trigrams.$el[0], view.$el.children()[1])
 
-  assert.instanceOf(WordsView, view.words)
-  assert.same(model, view.words.model)
+  assert.instanceOf(SelectsView, view.words)
+  assert.equal(model.wordSelects, view.words.subviews.map(v => v.model))
   assert.same(view.words.$el[0], view.$el.children()[2])
 })
 

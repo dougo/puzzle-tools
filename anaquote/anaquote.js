@@ -44,9 +44,6 @@ String.prototype.replaceAt = function(i, str) {
 Number.prototype.upTo = function (n) {
   return n < this ? [] : Array.from(Array(n - this + 1), (_, i) => this + i)
 }
-Object.defineProperty(Number.prototype, 'times', {
-  get: function () { return (0).upTo(this - 1) }
-})
 
 class WordSet extends Set {
   constructor (words = []) {
@@ -328,89 +325,39 @@ class Anaquote {
 
   get selectedString () { return this.quotationSelect.value }
 
-  get selectedTrigrams () {
-    return this.trigramSelects.map(s => s.value)
-  }
-  selectedTrigram(i) {
-    return this.trigramSelects[i].value
-  }
-  selectTrigram(i, trigram) {
-    this.trigramSelects[i].select(trigram)
-  }
-
-  get selectedWords () {
-    return this.wordSelects.map(s => s.value)
-  }
-  selectedWord(i) {
-    return this.wordSelects[i].value
-  }
-  selectWord(i, word) {
-    this.wordSelects[i].select(word)
-  }
-
-  formattedTrigramOptions(i) {
-    return this.trigramSelects[i].formattedOptions()
-  }
-  formattedWordOptions(i) {
-    return this.wordSelects[i].formattedOptions()
-  }
   quotation() {
     return this.enumeration ? this.enumeration.blank.fillIn(this.selectedString) : this.selectedString
   }
 }
 
-class SelectionView {
-  constructor (model, i) {
+class SelectView {
+  constructor (model) {
     this.model = model
-    this.i = i
-    this.$el = $('<select>').addClass('mono')
-    this.$el.change(() => { this.modelSelect(this.i, this.$el.val()) })
+    this.$el = $('<select>', { class: 'mono' })
+    this.$el.change(() => this.model.select(this.$el.val()))
   }
   get $options () {
     return Array.from(this.$el.prop('options'))
   }
   render() {
-    let opts = this.modelOptions(this.i).map(([v,t]) => {
+    let opts = this.model.formattedOptions().map(([v,t]) => {
       t = t.replace(/ /g, '&nbsp;')
       return `<option value=${v}>${t}</option>`
     })
-    this.$el.empty().append(opts).val(this.modelValue(this.i))
+    this.$el.empty().append(opts).val(this.model.value)
     return this
   }
 }
 
-class SelectionsView {
-  constructor (model) {
-    this.model = model
-    this.subviews = this.selections().map((s,i) => new this.subviewClass(model, i))
+class SelectsView {
+  constructor (models) {
+    this.subviews = models.map(model => new SelectView(model))
     this.$el = $('<p>').append(this.subviews.map(v => v.$el))
   }
   render() {
     this.subviews.forEach(v => v.render())    
     return this
   }
-}
-
-class TrigramSelectionView extends SelectionView {
-  modelOptions(i) { return this.model.formattedTrigramOptions(i) }
-  modelValue(i) { return this.model.selectedTrigram(i) }
-  modelSelect(i, trigram) { this.model.selectTrigram(i, trigram) }
-}
-
-class WordSelectionView extends SelectionView {
-  modelOptions(i) { return this.model.formattedWordOptions(i) }
-  modelValue(i) { return this.model.selectedWord(i) }
-  modelSelect(i, word) { this.model.selectWord(i, word) }
-}
-
-class TrigramsView extends SelectionsView {
-  get subviewClass () { return TrigramSelectionView }
-  selections() { return this.model.selectedTrigrams }
-}
-
-class WordsView extends SelectionsView {
-  get subviewClass () { return WordSelectionView }
-  selections() { return this.model.selectedWords }
 }
 
 class QuotationView {
@@ -430,10 +377,10 @@ class AnaquoteView {
     this.model = model
     this.quotation = new QuotationView(model)
     this.$el.append(this.quotation.$el)
-    this.trigrams = new TrigramsView(model)
+    this.trigrams = new SelectsView(model.trigramSelects)
     this.$el.append(this.trigrams.$el)
     if (model.enumeration) {
-      this.words = new WordsView(model)
+      this.words = new SelectsView(model.wordSelects)
       this.$el.append(this.words.$el)
     }
     this.$el.change(() => this.render())

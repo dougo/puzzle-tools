@@ -101,6 +101,9 @@ class Blank {
     let string = this._string.replace(/\u2019/g, "'")
     return new Blank(string.replace(/[^-_\/'0-9]/g, ''))
   }
+  formatOptions(options) {
+    return options.map(o => [o, this.fillIn(o)])
+  }
 }
 
 class Enumeration {
@@ -140,11 +143,13 @@ class Enumeration {
 }
 
 class QuotationSelect {
-  constructor (value, trigrams = []) {
+  constructor (value, trigrams = [], enumeration) {
     this._value = value
     this.trigrams = trigrams
+    this.enumeration = enumeration
+    let blanks = enumeration ? enumeration.trigramBlanks : []
     this.trigramSelects = trigrams.map((t, i) => {
-      return new TrigramSelect(trigrams, this, i)
+      return new TrigramSelect(trigrams, this, i, blanks[i])
     })
   }
   get value () { return this._value }
@@ -169,10 +174,11 @@ class QuotationSelect {
 }
 
 class TrigramSelect {
-  constructor (trigrams, quotationSelect, i) {
+  constructor (trigrams, quotationSelect, i, blank) {
     this.trigrams = trigrams
     this.quotationSelect = quotationSelect
     this.i = i
+    this.blank = blank
   }
   get value () {
     return this.quotationSelect.selectedTrigram(this.i)
@@ -196,6 +202,10 @@ class TrigramSelect {
     if (trigram.includes('?')) opts.unshift(trigram)
     return ['???', ...opts].squeeze()
   }
+  formattedOptions() {
+    let opts = this.options()
+    return this.blank ? this.blank.formatOptions(opts) : opts.map(o => [o, o])
+  }
 }
 
 class LeftoverSelect {
@@ -207,6 +217,9 @@ class LeftoverSelect {
   }
   options() {
     return [this.value]
+  }
+  formattedOptions() {
+    return [[this.value, this.value]]
   }
 }
 
@@ -227,11 +240,6 @@ class Anaquote {
 
     let selectedString = '?'.repeat(trigrams.length * 3) + leftover
 
-    this.quotationSelect = new QuotationSelect(selectedString, trigrams)
-
-    this.trigramSelects = this.quotationSelect.trigramSelects
-    if (leftover) this.trigramSelects = [...this.trigramSelects, new LeftoverSelect(leftover)]
-
     if (enumeration) {
       this.enumeration = new Enumeration(enumeration)
       if (this.enumeration.length > selectedString.length)
@@ -239,6 +247,11 @@ class Anaquote {
       else if (this.enumeration.length < selectedString.length)
         throw new Error('Enumeration is too short!')
     }
+
+    this.quotationSelect = new QuotationSelect(selectedString, trigrams, this.enumeration)
+
+    this.trigramSelects = this.quotationSelect.trigramSelects
+    if (leftover) this.trigramSelects = [...this.trigramSelects, new LeftoverSelect(leftover)]
 
     this.wordSet = wordSet
   }
@@ -333,15 +346,11 @@ class Anaquote {
     return [this.unselectedWordOption(i), this.selectedWord(i), ...this.wordCandidates(i)].sort().squeeze()
   }
 
-  static formatOptions(options, blank) {
-    return options.map(o => [o, blank.fillIn(o)])
-  }
   formattedTrigramOptions(i) {
-    if (!this.enumeration) return this.trigramOptions(i).map(o => [o, o])
-    return this.constructor.formatOptions(this.trigramOptions(i), this.enumeration.trigramBlanks[i])
+    return this.trigramSelects[i].formattedOptions()
   }
   formattedWordOptions(i) {
-    return this.constructor.formatOptions(this.wordOptions(i), this.enumeration.wordBlanks[i])
+    return this.enumeration.wordBlanks[i].formatOptions(this.wordOptions(i))
   }
   quotation() {
     return this.enumeration ? this.enumeration.blank.fillIn(this.selectedString) : this.selectedString

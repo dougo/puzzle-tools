@@ -126,6 +126,10 @@ test('fillIn with prefix', () => {
   assert.equal('AD-HOC', blank.fillIn('ADHOC'))
 })
 
+test('formatOptions', () => {
+  assert.equal([['HEL', 'HE L'], ['LOW', 'LO W']], new Blank('2 1').formatOptions(['HEL', 'LOW']))
+})
+
 suite('Enumeration')
 
 test('toString', () => {
@@ -203,6 +207,12 @@ test('trigrams', () => {
   assert.equal(['HOO', 'RAY'], new QuotationSelect('??????', ['HOO', 'RAY']).trigrams)
 })
 
+test('enumeration', () => {
+  assert.equal(undefined, new QuotationSelect('??????', ['HOO', 'RAY']).enumeration)
+  let e = new Enumeration('6')
+  assert.same(e, new QuotationSelect('??????', ['HOO', 'RAY'], e).enumeration)
+})
+
 test('trigramSelects', () => {
   let model = new QuotationSelect('HOORAY', ['HOO', 'RAY'])
   let selects = model.trigramSelects
@@ -211,6 +221,13 @@ test('trigramSelects', () => {
   assert.equal(['HOO', 'RAY'], selects[0].trigrams)
   assert.same(model, selects[0].quotationSelect)
   assert.equal(0, selects[0].i)
+  assert.equal(undefined, selects[0].blank)
+})
+
+test('trigramSelects with blanks', () => {
+  let selects = new QuotationSelect('IAMFUN', ['FUN', 'IAM'], new Enumeration('1 2 3!')).trigramSelects
+  assert.equal('1 2 ', selects[0].blank)
+  assert.equal('3!', selects[1].blank)
 })
 
 test('setting value unselects partial trigrams that now have no available matches', () => {
@@ -253,6 +270,12 @@ test('quotationSelect', () => {
 
 test('i', () => {
   assert.equal(42, new TrigramSelect([], null, 42).i)
+})
+
+test('blank', () => {
+  assert.equal(undefined, new TrigramSelect([], null, 42).blank)
+  let b = new Blank('2 1')
+  assert.same(b, new TrigramSelect([], null, 42, b).blank)
 })
 
 test('value', () => {
@@ -313,6 +336,19 @@ test('options omits duplicates', () => {
   assert.equal(['???', 'FLY', 'TSE'], model.options())
 })
 
+test('formattedOptions', () => {
+  let q = new QuotationSelect('?????????D')
+  let model = new TrigramSelect(['HEL', 'LOW', 'ORL'], q, 1, new Blank('2 1'))
+  assert.equal([['???', '?? ?'], ['HEL', 'HE L'], ['LOW', 'LO W'], ['ORL', 'OR L']], model.formattedOptions())
+})
+
+test('formattedOptions with no blank', () => {
+  let q = new QuotationSelect('?????????D')
+  let model = new TrigramSelect(['HEL', 'LOW', 'ORL'], q, 1)
+  assert.equal([['???', '???'], ['HEL', 'HEL'], ['LOW', 'LOW'], ['ORL', 'ORL']], model.formattedOptions())
+})
+
+
 suite('LeftoverSelect')
 
 test('value', () => {
@@ -325,6 +361,10 @@ test('available', () => {
 
 test('options', () => {
   assert.equal(['D'], new LeftoverSelect('D').options())
+})
+
+test('formattedOptions', () => {
+  assert.equal([['D', 'D']], new LeftoverSelect('D').formattedOptions())
 })
 
 suite('Anaquote')
@@ -389,6 +429,12 @@ test('quotationSelect', () => {
   assert.instanceOf(QuotationSelect, model.quotationSelect)
   assert.equal('?????????D', model.quotationSelect.value)
   assert.equal(['HEL', 'LOW', 'ORL'], model.quotationSelect.trigrams)
+  assert.equal(undefined, model.quotationSelect.enumeration)
+})
+
+test('quotationSelect with enumeration', () => {
+  let model = new Anaquote('HEL LOW ORL D', '5, 5!')
+  assert.same(model.enumeration, model.quotationSelect.enumeration)
 })
 
 test('trigramSelects', () => {
@@ -620,10 +666,6 @@ test('wordOptions includes current word even if not in the wordSet', () => {
 test('wordOptions is sorted', () => {
   let model = new Anaquote('AST IFE', '1 5', new WordSet(['A', 'FEAST', 'I', 'STIFE']))
   assert.equal(['?????', 'FEAST', 'STIFE'], model.wordOptions(1))
-})
-
-test('formatOptions', () => {
-  assert.equal([['HEL', 'HE L'], ['LOW', 'LO W']], Anaquote.formatOptions(['HEL', 'LOW'], new Blank('2 1')))
 })
 
 test('formattedTrigramOptions', () => {

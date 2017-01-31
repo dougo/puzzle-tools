@@ -135,7 +135,7 @@ class Enumeration {
   }
 }
 
-class QuotationSelect {
+class Quotation {
   constructor (value, trigrams = [], enumeration) {
     this._value = value
     this.trigrams = trigrams
@@ -167,21 +167,21 @@ class QuotationSelect {
 }
 
 class TrigramSelect {
-  constructor (trigrams, quotationSelect, i, blank) {
+  constructor (trigrams, quotation, i, blank) {
     this.trigrams = trigrams
-    this.quotationSelect = quotationSelect
+    this.quotation = quotation
     this.i = i
     this.blank = blank
   }
   get value () {
-    return this.quotationSelect.value.substr(this.i, 3)
+    return this.quotation.value.substr(this.i, 3)
   }
   select(value) {
-    this.quotationSelect.value = this.quotationSelect.value.replaceAt(this.i, value)
+    this.quotation.value = this.quotation.value.replaceAt(this.i, value)
   }
   available() {
     let trigram = this.value
-    let otherSelections = this.quotationSelect.selectedTrigrams.remove(trigram)
+    let otherSelections = this.quotation.selectedTrigrams.remove(trigram)
     let avail = this.trigrams.subtract(otherSelections)
     if (trigram.includes('?')) {
       let regexp = new RegExp(trigram.replace(/\?/g, '.'))
@@ -217,8 +217,8 @@ class LeftoverSelect {
 }
 
 class WordSelect {
-  constructor (quotationSelect, offset, blank, wordSet) {
-    this.quotationSelect = quotationSelect
+  constructor (quotation, offset, blank, wordSet) {
+    this.quotation = quotation
     this.offset = offset
     this.blank = blank
     this.length = blank.length
@@ -226,14 +226,14 @@ class WordSelect {
     this.wordSet = wordSet
   }
   get value () {
-    return this.quotationSelect.value.substr(this.offset, this.length)
+    return this.quotation.value.substr(this.offset, this.length)
   }
   select(word) {
-    this.quotationSelect.value = this.quotationSelect.value.replaceAt(this.offset, word)
+    this.quotation.value = this.quotation.value.replaceAt(this.offset, word)
     if (word.includes('?')) return
     // Auto-select unique trigrams that overlap the word.
     this.trigramRange().forEach(i => {
-      let trigramSelect = this.quotationSelect.trigramSelects[i]      
+      let trigramSelect = this.quotation.trigramSelects[i]      
       if (trigramSelect && trigramSelect.value.includes('?')) {
         let avail = trigramSelect.available().squeeze()
         if (avail.length === 1) trigramSelect.select(avail[0])
@@ -241,10 +241,10 @@ class WordSelect {
     })
   }
   unselectOption() {
-    let all = this.quotationSelect.value
+    let all = this.quotation.value
     if (this.offset + this.length === all.length) {
       // Don't unselect the leftover (the final non-trigram).
-      let leftover = this.quotationSelect.leftover
+      let leftover = this.quotation.leftover
       return '?'.repeat(this.length - leftover.length) + leftover
     }
     return '?'.repeat(this.length)
@@ -255,17 +255,17 @@ class WordSelect {
     return [startTrigram, endTrigram]
   }
   trigramOptionArrays() {
-    let selectedTrigrams = this.quotationSelect.selectedTrigrams
+    let selectedTrigrams = this.quotation.selectedTrigrams
     let fullySelected = !this.value.includes('?')
     if (fullySelected) {
       // Act as if the word is unselected, to include all alternative word candidates.
-      let allWithoutThis = this.quotationSelect.value.replaceAt(this.offset, this.unselectOption())
+      let allWithoutThis = this.quotation.value.replaceAt(this.offset, this.unselectOption())
       selectedTrigrams = allWithoutThis.match(/.../g)
     }
-    let availableTrigrams = this.quotationSelect.trigrams.subtract(selectedTrigrams)
+    let availableTrigrams = this.quotation.trigrams.subtract(selectedTrigrams)
     let [first, last] = this.trigramRange()
     return first.upTo(last).map(i => {
-      if (i === selectedTrigrams.length) return [this.quotationSelect.leftover]
+      if (i === selectedTrigrams.length) return [this.quotation.leftover]
       let trigram = selectedTrigrams[i]
       if (!trigram.includes('?')) return [trigram]
       let regexp = new RegExp(trigram.replace(/\?/g, '.'))
@@ -312,9 +312,9 @@ class Anaquote {
         throw new Error('Enumeration is too short!')
     }
 
-    this.quotationSelect = new QuotationSelect(selectedString, trigrams, this.enumeration)
+    this.quotation = new Quotation(selectedString, trigrams, this.enumeration)
 
-    this.trigramSelects = this.quotationSelect.trigramSelects
+    this.trigramSelects = this.quotation.trigramSelects
     if (leftover) this.trigramSelects = [...this.trigramSelects, new LeftoverSelect(leftover)]
 
     this.wordSet = wordSet
@@ -322,7 +322,7 @@ class Anaquote {
     if (this.enumeration)
       this.wordSelects = this.enumeration.wordBlanks.map((blank, i) => {
         let offset = this.enumeration.wordStart(i)
-        return new WordSelect(this.quotationSelect, offset, blank, this.wordSet)
+        return new WordSelect(this.quotation, offset, blank, this.wordSet)
       })
   }
 }
@@ -372,7 +372,7 @@ class AnaquoteView {
   constructor (model) {
     this.$el = $('<div>')
     this.model = model
-    this.quotation = new QuotationView(model.quotationSelect)
+    this.quotation = new QuotationView(model.quotation)
     this.$el.append(this.quotation.$el)
     this.trigrams = new SelectsView(model.trigramSelects)
     this.$el.append(this.trigrams.$el)

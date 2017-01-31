@@ -198,10 +198,10 @@ class LeftoverSelect {
 
 class Anaquote {
   constructor (trigrams, enumeration, wordSet = new WordSet()) {
-    this.trigrams = trigrams.trim().toUpperCase().split(/\s+/)
+    trigrams = trigrams.trim().toUpperCase().split(/\s+/)
 
-    let leftover
-    this.trigrams.forEach(t => {
+    let leftover = ''
+    trigrams.forEach(t => {
       if (t.length > 3) throw new Error('Not a trigram: ' + t)
       else if (t.length < 3) {
         if (leftover) throw new Error(`More than one leftover: ${leftover} ${t}`)
@@ -209,27 +209,22 @@ class Anaquote {
       }
     })
 
-    this.trigrams = this.trigrams.sort((a, b) => {
-      if (a.length !== b.length) return b.length - a.length // put leftover at the end
-      return a.localeCompare(b)
-    })
+    this.trigrams = trigrams = trigrams.filter(t => t.length === 3).sort()
 
-    let selectedString = this.trigrams.map(t => t.length === 3 ? '???' : t).join('')
+    let selectedString = '?'.repeat(trigrams.length * 3) + leftover
 
     this.quotationSelect = new QuotationSelect(selectedString)
 
-    let fullTrigrams = this.trigrams.filter(t => t.length === 3)
-    this.trigramSelects = fullTrigrams.map((t, i) => {
-      return new TrigramSelect(fullTrigrams, this.quotationSelect, i)
+    this.trigramSelects = trigrams.map((t, i) => {
+      return new TrigramSelect(trigrams, this.quotationSelect, i)
     })
     if (leftover) this.trigramSelects.push(new LeftoverSelect(leftover))
 
     if (enumeration) {
       this.enumeration = new Enumeration(enumeration)
-      let trigramsTotal = this.trigrams.join('').length
-      if (this.enumeration.length > trigramsTotal)
+      if (this.enumeration.length > selectedString.length)
         throw new Error('Enumeration is too long!')
-      else if (this.enumeration.length < trigramsTotal)
+      else if (this.enumeration.length < selectedString.length)
         throw new Error('Enumeration is too short!')
     }
 

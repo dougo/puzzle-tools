@@ -332,16 +332,16 @@ test('setting selectedString unselects partial trigrams that now have no availab
 })
 
 test('trigrams is an array', () => {
-  assert.equal(['HEL', 'LOW', 'ORL', 'D'], new Anaquote('HEL LOW ORL D').trigrams)
+  assert.equal(['HEL', 'LOW', 'ORL'], new Anaquote('HEL LOW ORL D').trigrams)
 })
 test('trigrams is uppercase', () => {
-  assert.equal(['HEL', 'LOW', 'ORL', 'D'], new Anaquote('hel low orl d').trigrams)
+  assert.equal(['HEL', 'LOW', 'ORL'], new Anaquote('hel low orl d').trigrams)
 })
 test('trigrams is sorted', () => {
-  assert.equal(['DBY', 'GOO', 'E'], new Anaquote('GOO DBY E').trigrams)
+  assert.equal(['DBY', 'GOO'], new Anaquote('GOO DBY E').trigrams)
 })
 test('trigrams omits extra spaces', () => {
-  assert.equal(['HEL', 'LOW', 'ORL', 'D'], new Anaquote(' HEL  LOW   ORL D  ').trigrams)
+  assert.equal(['HEL', 'LOW', 'ORL'], new Anaquote(' HEL  LOW   ORL D  ').trigrams)
 })
 
 test('enumeration', () => {
@@ -918,7 +918,7 @@ test('clicking Start makes a new rendered AnaquoteView', () => {
   view.input.$enumeration.val('5 5!').change()
   view.input.$start.click()
   assert.instanceOf(AnaquoteView, view.anaquote)
-  assert.equal(['HEL', 'LOW', 'ORL', 'D'], view.anaquote.model.trigrams)
+  assert.equal(['HEL', 'LOW', 'ORL'], view.anaquote.model.trigrams)
   assert.equal('5 5!', view.anaquote.model.enumeration)
   assert.same(view.anaquote.$el[0], view.$el.children().last()[0])
   assert.hasText(view.anaquote.model.quotation(), view.anaquote.quotation.$el)

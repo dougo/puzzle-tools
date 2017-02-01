@@ -2,15 +2,21 @@ body {
   text-align: center;
 }
 
-.mono {
+.mono, .mono * {
   font-family: monospace;
   font-size: 20px;
 }
 
-select {
+.mono span {
+  background: buttonface;
+}
+
+select, option {
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
+  border: 0;
+  padding: 0;
 }
 
 input {

@@ -4,6 +4,11 @@ load('anaquote/anaquote.js')
 
 suite('Array utils')
 
+test('first', () => {
+  assert.equal(undefined, [].first())
+  assert.equal(1, [1].first())
+  assert.equal(1, [1, 2, 3].first())
+})
 test('last', () => {
   assert.equal(undefined, [].last())
   assert.equal(1, [1].last())
@@ -112,6 +117,16 @@ test('trigramBlanks', () => {
   assert.equal(['3-', '3'], new Blank('3-3').trigramBlanks())
 })
 
+test('prefix', () => {
+  assert.equal('', new Blank('3').prefix)
+  assert.equal(' (', new Blank(' (3/2)').prefix)
+})
+
+test('suffix', () => {
+  assert.equal('', new Blank('3').suffix)
+  assert.equal('! ', new Blank(' 5! ').suffix)
+})
+
 test('trim', () => {
   assert.instanceOf(Blank, new Blank('3').trim())
   assert.equal('5-2', new Blank('*5-2  ').trim())
@@ -123,7 +138,7 @@ test('trim', () => {
 
 test('fillIn', () => {
   assert.equal('HELLO', new Blank('5').fillIn('HELLO'))
-  assert.equal('(AND/OR)', new Blank('(3/2)').fillIn('ANDOR'))
+  assert.equal('AND/OR', new Blank('(3/2)').fillIn('ANDOR'))
 })
 
 test('fillIn with prefix', () => {
@@ -332,6 +347,11 @@ test('value', () => {
   assert.equal('D', new LeftoverSelect('D').value)
 })
 
+test('blank', () => {
+  let blank = new Blank('1!')
+  assert.same(blank, new LeftoverSelect('D', blank).blank)
+})
+
 test('available', () => {
   assert.equal(['D'], new LeftoverSelect('D').available())
 })
@@ -516,13 +536,13 @@ test('options is sorted', () => {
   assert.equal(['?????', 'FEAST', 'STIFE'], model.options())
 })
 
-test('formattedWordOptions', () => {
-  let q = new Quotation('??????E', ['DBY', 'GOO'])
-  let wordSet = new WordSet(['GOOD', 'DBYG', 'OOE', 'BYE'])
-  let models = [new WordSelect(q, 0, new Blank('4 '), wordSet),
-                new WordSelect(q, 4, new Blank('3!'), wordSet)]
-  assert.equal([['????', '???? '], ['DBYG', 'DBYG '], ['GOOD', 'GOOD ']], models[0].formattedOptions())
-  assert.equal([['??E', '??E!'],   ['BYE', 'BYE!'],   ['OOE', 'OOE!']],   models[1].formattedOptions())
+test('formattedOptions', () => {
+  let q = new Quotation('??????OP', ['CAN', 'TST'])
+  let wordSet = new WordSet(["CAN'T", 'STOP'])
+  let models = [new WordSelect(q, 0, new Blank('3’1'), wordSet),
+                new WordSelect(q, 4, new Blank('4!'), wordSet)]
+  assert.equal([['????', '???’?'], ['CANT', 'CAN’T']], models[0].formattedOptions())
+  assert.equal([['??OP', '??OP'],  ['STOP', 'STOP']],  models[1].formattedOptions())
 })
 
 suite('Anaquote')
@@ -595,10 +615,15 @@ test('trigramSelects', () => {
 })
 
 test('trigramSelects includes LeftoverSelect', () => {
-  let selects = new Anaquote('HEL LOW ORL D').trigramSelects
-  assert.equal(4, selects.length)
-  assert.instanceOf(LeftoverSelect, selects[3])
-  assert.equal('D', selects[3].value)
+  let select = new Anaquote('HEL LOW ORL D', '5, 5!').trigramSelects.last()
+  assert.instanceOf(LeftoverSelect, select)
+  assert.equal('D', select.value)
+  assert.instanceOf(Blank, select.blank)
+  assert.equal('1!', select.blank)
+})
+
+test('trigramSelects with no enumeration includes LeftoverSelect with no blank', () => {
+  assert.equal(undefined, new Anaquote('HEL LOW ORL D').trigramSelects.last().blank)
 })
 
 test('wordSelects', () => {
@@ -622,41 +647,61 @@ class TestSelect {
     this.i = i
     this.value = `${this.i}`
   }
-  formattedOptions() { return [['?', '?'], [`${this.i}`, `${this.i},  `]] }
+  formattedOptions() { return [['?', '?'], [`${this.i}`, `*${this.i},  `]] }
   select(value) { this.value = value }
 }
 
-test('constructor', () => {
+test('model', () => {
   let model = new TestSelect(0)
-  let view = new SelectView(model)
-  assert.same(model, view.model)
-  assert.is('select', view.$el)
-  assert.hasClass('mono', view.$el)
-  assert.empty(view.$el.children())
+  assert.same(model, new SelectView(model).model)
+})
+
+test('$el', () => {
+  let $el = new SelectView(new TestSelect(0)).$el
+  assert.is('span', $el)
+  assert.equal(1, $el.contents().length)
+})
+
+test('$el includes prefix and suffix if select has a blank', () => {
+  let model = new TestSelect(0)
+  model.blank = new Blank('*1,  ')
+  let $el = new SelectView(model).$el
+  assert.equal(3, $el.contents().length)
+  assert.equal('*', $el.contents().eq(0).text())
+  assert.equal(',  ', $el.contents().eq(2).text())
+})
+
+test('$select', () => {
+  let view = new SelectView(new TestSelect(0))
+  assert.is('select', view.$select)
+  assert.same(view.$el[0], view.$select.parent()[0])
+  assert.empty(view.$select.children())
 })
 
 test('$options', () => {
-  let view = new SelectView()
+  let view = new SelectView(new TestSelect(0))
   assert.empty(view.$options)
-  view.$el.append('<option>foo</option>', '<option>bar</option>')
+  view.$select.append('<option>foo</option>', '<option>bar</option>')
   assert.equal(['foo', 'bar'], view.$options.map(o => o.value))
 })
 
 test('render', () => {
   let view = new SelectView(new TestSelect(0))
-  assert.equal(view, view.render())
+  assert.same(view, view.render())
   assert.equal(['?', '0'], view.$options.map(o => o.value))
-  assert.equal('0,&nbsp;&nbsp;', view.$options[1].text)
-  assert.hasValue('0', view.$el)
+  assert.equal('*0,&nbsp;&nbsp;', view.$options[1].text)
+  assert.hasValue('0', view.$select)
+})
 
-  view.render()
+test('re-render empties the options first', () => {
+  let view = new SelectView(new TestSelect(0))
+  view.render().render()
   assert.equal(['?', '0'], view.$options.map(o => o.value))
 })
 
 test('selecting an option updates the model', () => {
   let view = new SelectView(new TestSelect(0))
-  let $el = view.render().$el
-  $el.val('?').change()
+  view.render().$select.val('?').change()
   assert.equal('?', view.model.value)
 })
 
@@ -666,6 +711,7 @@ test('constructor', () => {
   let selects = [0,1,2,3].map(i => new TestSelect(i))
   let view = new SelectsView(selects)
   assert.is('p', view.$el)
+  assert.hasClass('mono', view.$el)
   assert.equal(selects, view.subviews.map(v => v.model))
   assert.equal(4, view.subviews.length)
 
@@ -730,7 +776,7 @@ test('render', () => {
 
 test('selecting an option re-renders', () => {
   let view = new AnaquoteView(new Anaquote('HEL LOW ORL D', '5 5!')).render()
-  view.trigrams.subviews[1].$el.val('LOW').change()
+  view.trigrams.subviews[1].$select.val('LOW').change()
   refute.includes(view.trigrams.subviews[0].$options.map(o => o.value), 'LOW')
   assert.hasText('???LO W???D!', view.quotation.$el)
 })
@@ -910,4 +956,3 @@ test('full sentence', () => {
   let model = new Anaquote(trigrams, enumeration, wordSet)
   let view = new AnaquoteView(model).render()
 })
-

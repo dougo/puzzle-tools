@@ -1,6 +1,5 @@
-Array.prototype.last = function () {
-  return this[this.length - 1]
-}
+Array.prototype.first = function () { return this[0] }
+Array.prototype.last = function () { return this[this.length - 1] }
 Array.prototype.remove = function (x) {
   let i = this.indexOf(x)
   if (i < 0) return this
@@ -67,7 +66,9 @@ class Blank {
     this._tokens = string.split(/(\d+)/).map(token => {
       let len = Number.parseInt(token)
       return isNaN(len) ? token : len
-    }).filter(s => s !== '')
+    })
+    this.prefix = this._tokens.first()
+    this.suffix = this._tokens.last()
     this.length = this._tokens.filter(t => typeof(t) === 'number').sum()
     this.formattedLength = this._tokens.sum(t => typeof(t) === 'number' ? t : t.length)
   }
@@ -93,7 +94,7 @@ class Blank {
   }
   fillIn(fill) {
     let filled = [], i = 0
-    for (let t of this._tokens) {
+    for (let t of this._tokens.slice(1, -1)) {
       if (typeof t === 'string') {
         filled.push(t)
       } else {
@@ -159,7 +160,9 @@ class Quotation {
     })
   }
   get formattedValue () {
-    return this.enumeration ? this.enumeration.blank.fillIn(this.value) : this.value
+    if (!this.enumeration) return this.value
+    let blank = this.enumeration.blank
+    return blank.prefix + blank.fillIn(this.value) + blank.suffix
   }
   get selectedTrigrams () {
     return this.value.match(/.../g)
@@ -202,8 +205,9 @@ class TrigramSelect {
 }
 
 class LeftoverSelect {
-  constructor (value) {
+  constructor (value, blank) {
     this.value = value
+    this.blank = blank
   }
   available() {
     return [this.value]
@@ -315,7 +319,10 @@ class Anaquote {
     this.quotation = new Quotation(selectedString, trigrams, this.enumeration)
 
     this.trigramSelects = this.quotation.trigramSelects
-    if (leftover) this.trigramSelects = [...this.trigramSelects, new LeftoverSelect(leftover)]
+    if (leftover) {
+      let blank = this.enumeration ? this.enumeration.trigramBlanks.last() : undefined
+      this.trigramSelects = [...this.trigramSelects, new LeftoverSelect(leftover, blank)]
+    }
 
     this.wordSet = wordSet
 
@@ -330,18 +337,22 @@ class Anaquote {
 class SelectView {
   constructor (model) {
     this.model = model
-    this.$el = $('<select>', { class: 'mono' })
-    this.$el.change(() => this.model.select(this.$el.val()))
+    this.$select = $('<select>').change(() => this.model.select(this.$select.val()))
+    this.$el = $('<span>').append(this.$select)
+    if (this.model.blank) {
+      this.$el.prepend(this.model.blank.prefix)
+      this.$el.append(this.model.blank.suffix)
+    }
   }
   get $options () {
-    return Array.from(this.$el.prop('options'))
+    return Array.from(this.$select.prop('options'))
   }
   render() {
     let opts = this.model.formattedOptions().map(([v,t]) => {
       t = t.replace(/ /g, '&nbsp;')
       return `<option value=${v}>${t}</option>`
     })
-    this.$el.empty().append(opts).val(this.model.value)
+    this.$select.empty().append(opts).val(this.model.value)
     return this
   }
 }
@@ -349,7 +360,7 @@ class SelectView {
 class SelectsView {
   constructor (models) {
     this.subviews = models.map(model => new SelectView(model))
-    this.$el = $('<p>').append(this.subviews.map(v => v.$el))
+    this.$el = $('<p>', { class: 'mono', append: this.subviews.map(v => v.$el) })
   }
   render() {
     this.subviews.forEach(v => v.render())    

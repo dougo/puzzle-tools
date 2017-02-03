@@ -102,9 +102,9 @@ test('length', () => {
 
 test('formattedLength', () => {
   assert.equal(3, new Blank('3').formattedLength)
-  assert.equal(8, new Blank(' 5, ').formattedLength)
+  assert.equal(5, new Blank(' 5, ').formattedLength)
   assert.equal(5, new Blank("3'1").formattedLength)
-  assert.equal(3, new Blank('...').formattedLength)
+  assert.equal(0, new Blank('...').formattedLength)
 })
 
 test('trigramBlanks', () => {
@@ -127,13 +127,10 @@ test('suffix', () => {
   assert.equal('! ', new Blank(' 5! ').suffix)
 })
 
-test('trim', () => {
-  assert.instanceOf(Blank, new Blank('3').trim())
-  assert.equal('5-2', new Blank('*5-2  ').trim())
-  assert.equal('3/2', new Blank(' (3/2)').trim())
-  assert.equal("1'4", new Blank("1'4").trim())
-  assert.equal("'1'", new Blank("'1'").trim())
-  assert.equal("3'1", new Blank('3’1').trim())
+test('sanitize', () => {
+  assert.instanceOf(Blank, new Blank('3').sanitize())
+  assert.equal('3', new Blank('3').sanitize())
+  assert.equal("3'1", new Blank('3’1').sanitize())
 })
 
 test('fillIn', () => {
@@ -384,8 +381,8 @@ test('length', () => {
   assert.equal(17, new WordSelect(null, 42, new Blank('17')).length)
 })
 
-test('trimmedBlank', () => {
-  let blank = new WordSelect(null, 0, new Blank('(3’1)')).trimmedBlank
+test('lookupBlank', () => {
+  let blank = new WordSelect(null, 0, new Blank('3’1')).lookupBlank
   assert.instanceOf(Blank, blank)
   assert.equal("3'1", blank)
 })

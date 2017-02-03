@@ -70,7 +70,7 @@ class Blank {
     this.prefix = this._tokens.first()
     this.suffix = this._tokens.last()
     this.length = this._tokens.filter(t => typeof(t) === 'number').sum()
-    this.formattedLength = this._tokens.sum(t => typeof(t) === 'number' ? t : t.length)
+    this.formattedLength = this._tokens.slice(1, -1).sum(t => typeof(t) === 'number' ? t : t.length)
   }
   toString() { return this._string }
 
@@ -105,10 +105,9 @@ class Blank {
     }
     return filled.join('')
   }
-  trim() {
-    // Allow smart-apostrophe, but our word list only has ASCII apostrophe.
-    let string = this._string.replace(/\u2019/g, "'")
-    return new Blank(string.replace(/[^-_\/'0-9]/g, ''))
+  sanitize() {
+    // Translate smart-apostrophe to ASCII apostrophe, for looking up in the word list.
+    return new Blank(this._string.replace(/\u2019/g, "'"))
   }
   formatOptions(options) {
     return options.map(o => [o, this.fillIn(o)])
@@ -226,7 +225,7 @@ class WordSelect {
     this.offset = offset
     this.blank = blank
     this.length = blank.length
-    this.trimmedBlank = blank.trim()
+    this.lookupBlank = blank.sanitize()
     this.wordSet = wordSet
   }
   get value () {
@@ -279,8 +278,8 @@ class WordSelect {
   candidates() {
     let permutationToWord = p => p.join('').substr(this.offset % 3, this.length)
     return this.trigramOptionArrays().productWithoutRepeats(perm => {
-      let prefix = this.trimmedBlank.fillIn(permutationToWord(perm))
-      return this.wordSet.hasPrefix(prefix, this.trimmedBlank.formattedLength)
+      let prefix = this.lookupBlank.fillIn(permutationToWord(perm))
+      return this.wordSet.hasPrefix(prefix, this.lookupBlank.formattedLength)
     }).map(permutationToWord)
   }
   options() {

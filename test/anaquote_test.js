@@ -234,6 +234,11 @@ test('trigramSelects with blanks', () => {
   assert.equal('3!', selects[1].blank)
 })
 
+test('trigramSelects includes formatted leftover into last blank', () => {
+  let selects = new Quotation('JELLO', ['JEL'], new Enumeration('4-1!')).trigramSelects
+  assert.equal('3L-O!', selects.last().blank)
+})
+
 test('setting value unselects partial trigrams that now have no available matches', () => {
   let model = new Quotation('S?????', ['SEL', 'VES'])
   model.value = 'S??SEL'
@@ -336,29 +341,6 @@ test('formattedOptions with no blank', () => {
   let q = new Quotation('?????????D')
   let model = new TrigramSelect(['HEL', 'LOW', 'ORL'], q, 3)
   assert.equal([['???', '???'], ['HEL', 'HEL'], ['LOW', 'LOW'], ['ORL', 'ORL']], model.formattedOptions())
-})
-
-suite('LeftoverSelect')
-
-test('value', () => {
-  assert.equal('D', new LeftoverSelect('D').value)
-})
-
-test('blank', () => {
-  let blank = new Blank('1!')
-  assert.same(blank, new LeftoverSelect('D', blank).blank)
-})
-
-test('available', () => {
-  assert.equal(['D'], new LeftoverSelect('D').available())
-})
-
-test('options', () => {
-  assert.equal(['D'], new LeftoverSelect('D').options())
-})
-
-test('formattedOptions', () => {
-  assert.equal([['D', 'D']], new LeftoverSelect('D').formattedOptions())
 })
 
 suite('WordSelect')
@@ -603,24 +585,7 @@ test('quotation with enumeration', () => {
 
 test('trigramSelects', () => {
   let model = new Anaquote('HOO RAY')
-  let selects = model.trigramSelects
-  assert.equal(2, selects.length)
-  assert.instanceOf(TrigramSelect, selects[0])
-  assert.equal(['HOO', 'RAY'], selects[0].trigrams)
-  assert.same(model.quotation, selects[0].quotation)
-  assert.equal(0, selects[0].i)
-})
-
-test('trigramSelects includes LeftoverSelect', () => {
-  let select = new Anaquote('HEL LOW ORL D', '5, 5!').trigramSelects.last()
-  assert.instanceOf(LeftoverSelect, select)
-  assert.equal('D', select.value)
-  assert.instanceOf(Blank, select.blank)
-  assert.equal('1!', select.blank)
-})
-
-test('trigramSelects with no enumeration includes LeftoverSelect with no blank', () => {
-  assert.equal(undefined, new Anaquote('HEL LOW ORL D').trigramSelects.last().blank)
+  assert.same(model.quotation.trigramSelects, model.trigramSelects)
 })
 
 test('wordSelects', () => {

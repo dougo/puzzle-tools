@@ -146,6 +146,11 @@ class Quotation {
     })
     let leftoverLength = value.length % 3
     this.leftover = value.substr(-leftoverLength, leftoverLength)
+    if (leftoverLength && blanks.length && trigrams.length) {
+      let lastSelect = this.trigramSelects.last()
+      let lastBlank = blanks.last()
+      lastSelect.blank = new Blank(lastSelect.blank + lastBlank.fillIn(this.leftover) + lastBlank.suffix)
+    }
   }
   toString() { return this.value }
   get value () { return this._value }
@@ -200,22 +205,6 @@ class TrigramSelect {
   formattedOptions() {
     let opts = this.options()
     return this.blank ? this.blank.formatOptions(opts) : opts.map(o => [o, o])
-  }
-}
-
-class LeftoverSelect {
-  constructor (value, blank) {
-    this.value = value
-    this.blank = blank
-  }
-  available() {
-    return [this.value]
-  }
-  options() {
-    return [this.value]
-  }
-  formattedOptions() {
-    return [[this.value, this.value]]
   }
 }
 
@@ -318,10 +307,6 @@ class Anaquote {
     this.quotation = new Quotation(selectedString, trigrams, this.enumeration)
 
     this.trigramSelects = this.quotation.trigramSelects
-    if (leftover) {
-      let blank = this.enumeration ? this.enumeration.trigramBlanks.last() : undefined
-      this.trigramSelects = [...this.trigramSelects, new LeftoverSelect(leftover, blank)]
-    }
 
     this.wordSet = wordSet
 

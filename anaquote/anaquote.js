@@ -430,12 +430,13 @@ class ApplicationView {
     this.$el.append(this.input.$el)
   }
   fetchWords() {
-    $.get('../vendor/NPLCombinedWordList.txt', 'text/plain').done(data => {
-      this.words = new WordSet(data.split(/\r?\n/).map(w => w.toUpperCase()))
+    $.get('../vendor/NPLCombinedWordList.txt').done(data => {
       console.log('Fetched wordlist.')
-    }).fail(data => {
+      this.words = new WordSet(data.match(/.+/g).map(w => w.toUpperCase()))
+      console.log('Processed wordlist.')
+    }).fail(jqXHR => {
       console.log('Failed to fetch wordlist:')
-      console.log(data.statusText)
+      console.log(jqXHR.statusText)
     })
   }
 }

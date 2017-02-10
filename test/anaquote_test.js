@@ -881,17 +881,39 @@ test('clicking Start removes the old AnaquoteView first', () => {
   assert.equal(2, view.$el.children().length)
 })
 
-// Can't get this to work :(
-test.skip('fetchWords', () => {
+test('fetchWords', () => {
   let server = sinon.fakeServer.create()
+  server.respondWith('../vendor/NPLCombinedWordList.txt', "foo\r\nbar\r\nbaz\r\n")
+
+  // Sinon sets global.XMLHttpRequest, but jquery uses window.XMLHttpRequest.
+  // TODO: is there a way to tell sinon to use window as the global object or something?
+  window.XMLHttpRequest = global.XMLHttpRequest
 
   let app = new ApplicationView($('<div>'))
   app.fetchWords()
-  console.log(server)
 
   server.respond()
-  refute.empty(server.requests)
   
+  assert.instanceOf(WordSet, app.words)
+  assert.equal(['FOO', 'BAR', 'BAZ'], [...app.words])
+
+  server.restore()
+})
+
+test('fetchWords handles failure', () => {
+  let server = sinon.fakeServer.create()
+  window.XMLHttpRequest = global.XMLHttpRequest
+  sinon.spy(console, 'log')
+
+  let app = new ApplicationView($('<div>'))
+  app.fetchWords()
+
+  server.respond()
+  
+  assert.equal(undefined, app.words)
+  assert(console.log.calledWith('Not Found'))
+
+  console.log.restore()
   server.restore()
 })
 

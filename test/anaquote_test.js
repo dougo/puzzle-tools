@@ -813,29 +813,52 @@ test('submit form causes blur', () => {
   refute(document.hasFocus())
 })
 
+test('setMessage displays a message at the bottom of the form', () => {
+  let view = new InputView()
+  view.setMessage('frobnicating...')
+  assert.hasClass('message', view.$message)
+  assert.hasText('frobnicating...', view.$message)
+  let $children = view.$el.children('div')
+  assert.equal(4, $children.length)
+  assert.same(view.$message[0], $children.eq(3)[0])
+})
+
+test('setMessage with className argument', () => {
+  let view = new InputView()
+  view.setMessage('whoopsie.', 'error')
+  assert.hasClass('error', view.$message)
+})
+
+test('setMessage replaces the previous message', () => {
+  let view = new InputView()
+  view.setMessage('synchronizing cardinal grammeters...')
+  view.setMessage('oscillating quasistatic regeneration...')
+  assert.equal(4, view.$el.children('div').length)
+})
+
+test('clearMessage removes the message from the form', () => {
+  let view = new InputView()
+  view.setMessage('reducing sinusoidal depleneration...')
+  view.clearMessage()
+  assert.equal(3, view.$el.children('div').length)
+  assert.equal(undefined, view.$message)
+})
+
+test('clearMessage with no message', () => {
+  let view = new InputView()
+  view.clearMessage()
+  assert.equal(3, view.$el.children('div').length)
+})
+
 test('error thrown by callback is displayed on the form', () => {
   let view = new InputView(() => { throw new Error('oops') })
   view.$enumeration.focus()
   view.$el.submit()
   assert(document.hasFocus())
-  assert.hasClass('error', view.$error)
-  assert.hasText('oops', view.$error)
-  let $children = view.$el.children('div')
-  assert.equal(4, $children.length)
-  assert.same(view.$error[0], $children.eq(3)[0])
+  assert.hasText('oops', view.$message)
 })
 
-test('old error is replaced when new one is thrown', () => {
-  let num = 0
-  let view = new InputView(() => { throw new Error(`oops ${num++}`) })
-  view.$el.submit()
-  view.$el.submit()
-  let $children = view.$el.children('div')
-  assert.equal(4, $children.length)
-  assert.hasText('oops 1', $children.eq(3))
-})
-
-test('old error is removed when no error is thrown', () => {
+test('old error message is cleared when no error is thrown', () => {
   let num = 0
   let view = new InputView(() => { if (num++ === 0) throw new Error('oops') })
   view.$el.submit()
@@ -881,7 +904,7 @@ test('clicking Start removes the old AnaquoteView first', () => {
   assert.equal(2, view.$el.children().length)
 })
 
-test('fetchWords', () => {
+test('fetchWords', (done) => {
   let server = sinon.fakeServer.create()
   server.respondWith('../vendor/NPLCombinedWordList.txt', "foo\r\nbar\r\nbaz\r\n")
 
@@ -889,32 +912,55 @@ test('fetchWords', () => {
   // TODO: is there a way to tell sinon to use window as the global object or something?
   window.XMLHttpRequest = global.XMLHttpRequest
 
-  let app = new ApplicationView($('<div>'))
-  app.fetchWords()
+  try {
+    let app = new ApplicationView($('<div>'))
+    app.fetchWords()
+    assert.hasText('Fetching word list...', app.input.$message)
 
-  server.respond()
-  
-  assert.instanceOf(WordSet, app.words)
-  assert.equal(['FOO', 'BAR', 'BAZ'], [...app.words])
+    server.respond()
+    assert.hasText('Processing word list...', app.input.$message)
+    
+    window.setTimeout(() => {
+      assert.equal(undefined, app.input.$message)
+      assert.instanceOf(WordSet, app.words)
+      assert.equal(['FOO', 'BAR', 'BAZ'], [...app.words])
 
-  server.restore()
+      server.restore()
+      done()
+    })
+  } catch (err) {
+    done(err)
+  }
 })
 
-test('fetchWords handles failure', () => {
+test('fetchWords handles failure', (done) => {
   let server = sinon.fakeServer.create()
   window.XMLHttpRequest = global.XMLHttpRequest
-  sinon.spy(console, 'log')
+  sinon.stub(console, 'log')
+  let clock = sinon.useFakeTimers()
 
   let app = new ApplicationView($('<div>'))
   app.fetchWords()
 
-  server.respond()
-  
-  assert.equal(undefined, app.words)
-  assert(console.log.calledWith('Not Found'))
+  let error
+  try {
+    server.respond()
+
+    assert(console.log.calledWith('Failed to fetch word list: Not Found'))
+    assert.hasClass('error', app.input.$message)
+    assert.hasText('Failed to fetch word list: Not Found', app.input.$message)
+    assert.equal(undefined, app.words)
+
+    clock.tick(2000)
+    assert.equal(undefined, app.input.$message)
+  } catch (err) {
+    error = err
+  }
 
   console.log.restore()
+  clock.restore()
   server.restore()
+  done(error)
 })
 
 suite('performance')

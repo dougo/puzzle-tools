@@ -407,15 +407,23 @@ class InputView {
     this.$el.children().wrap('<div>') // to stack them vertically
     this.$el.submit(event => {
       event.preventDefault()
-      if (this.$error) this.$error.remove()
+      this.clearMessage()
       try { callback(this.$trigrams.val(), this.$enumeration.val()) }
       catch (e) {
-        this.$error = $('<div>', { class: 'error', text: e.message })
-        this.$el.append(this.$error)
+        this.setMessage(e.message, 'error')
         return
       }
       $(document.activeElement).blur()
     })
+  }
+  setMessage(message, className = 'message') {
+    this.clearMessage()
+    this.$message = $('<div>', { class: className, text: message })
+    this.$el.append(this.$message)
+  }
+  clearMessage() {
+    if (this.$message) this.$message.remove()
+    delete this.$message
   }
 }
 
@@ -430,13 +438,19 @@ class ApplicationView {
     this.$el.append(this.input.$el)
   }
   fetchWords() {
-    $.get('../vendor/NPLCombinedWordList.txt').done(data => {
-      console.log('Fetched wordlist.')
-      this.words = new WordSet(data.match(/.+/g).map(w => w.toUpperCase()))
-      console.log('Processed wordlist.')
+    let jqxhr = $.get('../vendor/NPLCombinedWordList.txt')
+    this.input.setMessage('Fetching word list...')
+    jqxhr.done(data => {
+      this.input.setMessage('Processing word list...')
+      window.setTimeout(() => {
+        this.words = new WordSet(data.match(/.+/g).map(w => w.toUpperCase()))
+        this.input.clearMessage()
+      })
     }).fail(jqXHR => {
-      console.log('Failed to fetch wordlist:')
-      console.log(jqXHR.statusText)
+      var msg = 'Failed to fetch word list: ' + jqXHR.statusText
+      this.input.setMessage(msg, 'error')
+      console.log(msg)
+      window.setTimeout(() => this.input.clearMessage(), 2000)
     })
   }
 }

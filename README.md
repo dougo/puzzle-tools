@@ -43,3 +43,10 @@ To run the unit tests:
     ```
     $ yarn test
     ```
+# Word prefix list
+
+To regenerate the word prefix list:
+
+```
+$ anaquote/processWordList.js < vendor/NPLCombinedWordList.txt > anaquote/wordListPrefixes.json
+```

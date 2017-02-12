@@ -904,33 +904,33 @@ test('clicking Start removes the old AnaquoteView first', () => {
   assert.equal(2, view.$el.children().length)
 })
 
-test('fetchWords', (done) => {
+test('fetchWords', done => {
   let server = sinon.fakeServer.create()
-  server.respondWith('../vendor/NPLCombinedWordList.txt', "foo\r\nbar\r\nbaz\r\n")
+  server.respondWith('wordListPrefixes.json', '[null, null, ["", "H", "HI"]]')
 
   // Sinon sets global.XMLHttpRequest, but jquery uses window.XMLHttpRequest.
   // TODO: is there a way to tell sinon to use window as the global object or something?
   window.XMLHttpRequest = global.XMLHttpRequest
 
-  try {
-    let app = new ApplicationView($('<div>'))
-    app.fetchWords()
-    assert.hasText('Fetching word list...', app.input.$message)
+  let app = new ApplicationView($('<div>'))
+  app.fetchWords()
+  assert.hasText('Fetching word list...', app.input.$message)
 
-    server.respond()
-    assert.hasText('Processing word list...', app.input.$message)
-    
-    window.setTimeout(() => {
+  server.respond()
+  assert.hasText('Processing word list...', app.input.$message)
+  
+  window.setTimeout(() => {
+    try {
       assert.equal(undefined, app.input.$message)
       assert.instanceOf(WordSet, app.words)
-      assert.equal(['FOO', 'BAR', 'BAZ'], [...app.words])
+      assert(app.words.hasPrefix('H', 2))
 
       server.restore()
       done()
-    })
-  } catch (err) {
-    done(err)
-  }
+    } catch (err) {
+      done(err)
+    }
+  })
 })
 
 test('fetchWords handles failure', (done) => {
@@ -967,8 +967,9 @@ suite('performance')
 
 before('load the word list', () => {
   const fs = require('fs')
-  const wordList = fs.readFileSync(__dirname + '/../vendor/NPLCombinedWordList.txt', 'latin1')
-  wordSet = new WordSet(wordList.split(/\r?\n/).map(w => w.toUpperCase()))
+  const prefixArrays = JSON.parse(fs.readFileSync(__dirname + '/../anaquote/wordListPrefixes.json'))
+  wordSet = new WordSet()
+  wordSet.prefixes = prefixArrays.map(a => new Set(a))
 })
 
 test('four long words', () => {

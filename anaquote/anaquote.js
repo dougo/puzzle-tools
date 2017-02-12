@@ -438,12 +438,13 @@ class ApplicationView {
     this.$el.append(this.input.$el)
   }
   fetchWords() {
-    let jqxhr = $.get('../vendor/NPLCombinedWordList.txt')
+    let jqxhr = $.getJSON('wordListPrefixes.json')
     this.input.setMessage('Fetching word list...')
-    jqxhr.done(data => {
+    jqxhr.done(prefixArrays => {
       this.input.setMessage('Processing word list...')
       window.setTimeout(() => {
-        this.words = new WordSet(data.match(/.+/g).map(w => w.toUpperCase()))
+        this.words = new WordSet()
+        this.words.prefixes = prefixArrays.map(a => new Set(a))
         this.input.clearMessage()
       })
     }).fail(jqXHR => {

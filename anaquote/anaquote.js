@@ -140,28 +140,20 @@ class Quotation {
     this._value = value
     this.trigrams = trigrams
     this.enumeration = enumeration
-    let blanks = enumeration ? enumeration.trigramBlanks : []
-    this.trigramSelects = trigrams.map((t, i) => {
-      return new TrigramSelect(trigrams, this, i*3, blanks[i])
-    })
     let leftoverLength = value.length % 3
     this.leftover = value.substr(-leftoverLength, leftoverLength)
-    if (leftoverLength && blanks.length && trigrams.length) {
-      let lastSelect = this.trigramSelects.last()
-      let lastBlank = blanks.last()
-      lastSelect.blank = new Blank(lastSelect.blank + lastBlank.fillIn(this.leftover) + lastBlank.suffix)
-    }
   }
   toString() { return this.value }
   get value () { return this._value }
   set value (value) {
     this._value = value
-    this.trigramSelects.forEach(select => {
-      // Unselect partially-selected trigrams that now have no options.
+    // Unselect partially-selected trigrams that now have no options.
+    for (let i = 0; i < value.length / 3; i++) {
+      let select = this.trigramSelect(i)
       let t = select.value
       if (t !== '???' && t.includes('?') && select.available().length === 0)
         this._value = this._value.replaceAt(select.i, '???')
-    })
+    }
   }
   get formattedValue () {
     if (!this.enumeration) return this.value
@@ -170,6 +162,10 @@ class Quotation {
   }
   get selectedTrigrams () {
     return this.value.match(/.../g)
+  }
+  trigramSelect(i) {
+    let blank = this.enumeration && this.enumeration.trigramBlanks[i]
+    return new TrigramSelect(this.trigrams, this, i*3, blank)
   }
 }
 
@@ -225,7 +221,7 @@ class WordSelect {
     if (word.includes('?')) return
     // Auto-select unique trigrams that overlap the word.
     this.trigramRange().forEach(i => {
-      let trigramSelect = this.quotation.trigramSelects[i]      
+      let trigramSelect = this.quotation.trigramSelect(i)
       if (trigramSelect && trigramSelect.value.includes('?')) {
         let avail = trigramSelect.available().squeeze()
         if (avail.length === 1) trigramSelect.select(avail[0])
@@ -306,7 +302,13 @@ class Anaquote {
 
     this.quotation = new Quotation(selectedString, trigrams, this.enumeration)
 
-    this.trigramSelects = this.quotation.trigramSelects
+    let blanks = this.enumeration ? this.enumeration.trigramBlanks : []
+    this.trigramSelects = trigrams.map((t, i) => this.quotation.trigramSelect(i))
+    if (leftover && enumeration && trigrams.length) {
+      let lastSelect = this.trigramSelects.last()
+      let leftoverBlank = this.enumeration.trigramBlanks.last()
+      lastSelect.blank = new Blank(lastSelect.blank + leftoverBlank.fillIn(leftover) + leftoverBlank.suffix)
+    }
 
     this.wordSet = wordSet
 

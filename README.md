@@ -30,7 +30,7 @@ $ make
 Helps you solve [anaquote puzzles](http://puzzlers.org/guide/index.php?expand=extras#anaquote) by interactively
 rearranging trigrams.
 
-# Testing
+#### Testing
 
 To run the unit tests:
 
@@ -43,7 +43,8 @@ To run the unit tests:
     ```
     $ yarn test
     ```
-# Word prefix list
+    
+#### Word prefix list
 
 To regenerate the word prefix list:
 

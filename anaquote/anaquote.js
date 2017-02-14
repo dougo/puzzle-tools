@@ -139,7 +139,7 @@ class Quotation {
   constructor (value, trigrams = [], enumeration) {
     this._value = value
     this.trigrams = trigrams
-    this.enumeration = enumeration
+    this.enumeration = enumeration || new Enumeration(value.length.toString())
     let leftoverLength = value.length % 3
     this.leftover = value.substr(-leftoverLength, leftoverLength)
   }
@@ -156,7 +156,6 @@ class Quotation {
     }
   }
   get formattedValue () {
-    if (!this.enumeration) return this.value
     let blank = this.enumeration.blank
     return blank.prefix + blank.fillIn(this.value) + blank.suffix
   }
@@ -164,8 +163,7 @@ class Quotation {
     return this.value.match(/.../g)
   }
   trigramSelect(i) {
-    let blank = this.enumeration && this.enumeration.trigramBlanks[i]
-    return new TrigramSelect(this.trigrams, this, i*3, blank)
+    return new TrigramSelect(this.trigrams, this, i*3, this.enumeration.trigramBlanks[i])
   }
 }
 
@@ -174,7 +172,7 @@ class TrigramSelect {
     this.trigrams = trigrams
     this.quotation = quotation
     this.i = i
-    this.blank = blank
+    this.blank = blank || new Blank('3')
   }
   get value () {
     return this.quotation.value.substr(this.i, 3)
@@ -199,8 +197,7 @@ class TrigramSelect {
     return ['???', ...opts].squeeze()
   }
   formattedOptions() {
-    let opts = this.options()
-    return this.blank ? this.blank.formatOptions(opts) : opts.map(o => [o, o])
+    return this.blank.formatOptions(this.options())
   }
 }
 
@@ -290,31 +287,30 @@ class Anaquote {
 
     this.trigrams = trigrams = trigrams.filter(t => t.length === 3).sort()
 
-    let selectedString = '?'.repeat(trigrams.length * 3) + leftover
+    let unselectedString = '?'.repeat(trigrams.length * 3) + leftover
 
     if (enumeration) {
-      this.enumeration = new Enumeration(enumeration)
-      if (this.enumeration.length > selectedString.length)
+      this.enumeration = enumeration = new Enumeration(enumeration)
+      if (enumeration.length > unselectedString.length)
         throw new Error('Enumeration is too long!')
-      else if (this.enumeration.length < selectedString.length)
+      else if (enumeration.length < unselectedString.length)
         throw new Error('Enumeration is too short!')
     }
 
-    this.quotation = new Quotation(selectedString, trigrams, this.enumeration)
+    this.quotation = new Quotation(unselectedString, trigrams, enumeration)
 
-    let blanks = this.enumeration ? this.enumeration.trigramBlanks : []
     this.trigramSelects = trigrams.map((t, i) => this.quotation.trigramSelect(i))
-    if (leftover && enumeration && trigrams.length) {
+    if (leftover && trigrams.length) {
       let lastSelect = this.trigramSelects.last()
-      let leftoverBlank = this.enumeration.trigramBlanks.last()
+      let leftoverBlank = this.quotation.enumeration.trigramBlanks.last()
       lastSelect.blank = new Blank(lastSelect.blank + leftoverBlank.fillIn(leftover) + leftoverBlank.suffix)
     }
 
     this.wordSet = wordSet
 
-    if (this.enumeration)
-      this.wordSelects = this.enumeration.wordBlanks.map((blank, i) => {
-        let offset = this.enumeration.wordStart(i)
+    if (enumeration)
+      this.wordSelects = enumeration.wordBlanks.map((blank, i) => {
+        let offset = enumeration.wordStart(i)
         return new WordSelect(this.quotation, offset, blank, this.wordSet)
       })
   }
@@ -325,10 +321,8 @@ class SelectView {
     this.model = model
     this.$select = $('<select>').change(() => this.model.select(this.$select.val()))
     this.$el = $('<span>').append(this.$select)
-    if (this.model.blank) {
-      this.$el.prepend(this.model.blank.prefix)
-      this.$el.append(this.model.blank.suffix)
-    }
+    this.$el.prepend(this.model.blank.prefix)
+    this.$el.append(this.model.blank.suffix)
   }
   get $options () {
     return Array.from(this.$select.prop('options'))

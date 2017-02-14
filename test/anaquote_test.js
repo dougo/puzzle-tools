@@ -206,9 +206,14 @@ test('trigrams', () => {
 })
 
 test('enumeration', () => {
-  assert.equal(undefined, new Quotation('??????', ['HOO', 'RAY']).enumeration)
   let e = new Enumeration('6')
   assert.same(e, new Quotation('??????', ['HOO', 'RAY'], e).enumeration)
+})
+
+test('enumeration default', () => {
+  let enumeration = new Quotation('??????', ['HOO', 'RAY']).enumeration
+  assert.instanceOf(Enumeration, enumeration)
+  assert.equal('6', enumeration)
 })
 
 test('leftover', () => {
@@ -256,9 +261,14 @@ test('i', () => {
 })
 
 test('blank', () => {
-  assert.equal(undefined, new TrigramSelect([], null, 0).blank)
   let b = new Blank('2 1')
   assert.same(b, new TrigramSelect([], null, 0, b).blank)
+})
+
+test('blank default', () => {
+  let blank = new TrigramSelect([], null, 0).blank
+  assert.instanceOf(Blank, blank)
+  assert.equal('3', blank)
 })
 
 test('value', () => {
@@ -323,12 +333,6 @@ test('formattedOptions', () => {
   let q = new Quotation('?????????D')
   let model = new TrigramSelect(['HEL', 'LOW', 'ORL'], q, 3, new Blank('2 1'))
   assert.equal([['???', '?? ?'], ['HEL', 'HE L'], ['LOW', 'LO W'], ['ORL', 'OR L']], model.formattedOptions())
-})
-
-test('formattedOptions with no blank', () => {
-  let q = new Quotation('?????????D')
-  let model = new TrigramSelect(['HEL', 'LOW', 'ORL'], q, 3)
-  assert.equal([['???', '???'], ['HEL', 'HEL'], ['LOW', 'LOW'], ['ORL', 'ORL']], model.formattedOptions())
 })
 
 suite('WordSelect')
@@ -563,7 +567,7 @@ test('quotation', () => {
   assert.instanceOf(Quotation, model.quotation)
   assert.equal('?????????D', model.quotation.value)
   assert.equal(['HEL', 'LOW', 'ORL'], model.quotation.trigrams)
-  assert.equal(undefined, model.quotation.enumeration)
+  assert.equal('10', model.quotation.enumeration)
 })
 
 test('quotation with enumeration', () => {
@@ -583,6 +587,11 @@ test('trigramSelects with blanks', () => {
   let selects = new Anaquote('FUN IAM', '1 2 3!').trigramSelects
   assert.equal('1 2 ', selects[0].blank)
   assert.equal('3!', selects[1].blank)
+})
+
+test('trigramSelects includes leftover into last blank', () => {
+  let selects = new Anaquote('JEL LO').trigramSelects
+  assert.equal('3LO', selects.last().blank)
 })
 
 test('trigramSelects includes formatted leftover into last blank', () => {
@@ -610,6 +619,7 @@ class TestSelect {
   constructor (i) {
     this.i = i
     this.value = `${this.i}`
+    this.blank = this.value.length.toString()
   }
   formattedOptions() { return [['?', '?'], [`${this.i}`, `*${this.i},  `]] }
   select(value) { this.value = value }

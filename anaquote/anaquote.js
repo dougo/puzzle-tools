@@ -139,12 +139,9 @@ class Enumeration {
 }
 
 class Quotation {
-  constructor (value, trigrams = [], enumeration) {
+  constructor (value, enumeration) {
     this.value = value
-    this.trigrams = trigrams
     this.enumeration = enumeration || new Enumeration(value.length.toString())
-    let leftoverLength = value.length % 3
-    this.leftover = value.substr(-leftoverLength, leftoverLength)
   }
   toString() { return this.value }
   get formattedValue () {
@@ -154,17 +151,15 @@ class Quotation {
   get selectedTrigrams () {
     return this.value.match(/.../g)
   }
-  trigramSelect(i) {
-    return new TrigramSelect(this.trigrams, this, i*3, this.enumeration.trigramBlanks[i])
-  }
 }
 
 class SubstringSelect {
-  constructor (quotation, offset, blank) {
-    this.quotation = quotation
+  constructor (anaquote, offset, blank) {
+    this.anaquote = anaquote
     this.offset = offset
     this.blank = blank
   }
+  get quotation () { return this.anaquote.quotation }
   get length () { return this.blank.length }
   get unselectOption () { return '?'.repeat(this.length) }
 
@@ -175,7 +170,7 @@ class SubstringSelect {
     this.quotation.value = this.quotation.value.replaceAt(this.offset, value)
     // Unselect partially-selected trigrams that now have no options.
     for (let i = 0; i < value.length / 3; i++) {
-      let select = this.quotation.trigramSelect(i)
+      let select = this.anaquote.trigramSelect(i)
       if (select.isPartiallySelected && select.available().isEmpty)
         select.value = '???'
     }
@@ -195,10 +190,10 @@ class SubstringSelect {
 }
 
 class TrigramSelect extends SubstringSelect {
-  constructor (trigrams, quotation, offset, blank = new Blank('3')) {
-    super(quotation, offset, blank)
-    this.trigrams = trigrams
+  constructor (anaquote, offset, blank = new Blank('3')) {
+    super(anaquote, offset, blank)
   }
+  get trigrams () { return this.anaquote.trigrams }
   available() {
     let trigram = this.value
     let otherSelections = this.quotation.selectedTrigrams.remove(trigram)
@@ -212,8 +207,8 @@ class TrigramSelect extends SubstringSelect {
 }
 
 class WordSelect extends SubstringSelect {
-  constructor (quotation, offset, blank, wordSet) {
-    super(quotation, offset, blank)
+  constructor (anaquote, offset, blank, wordSet) {
+    super(anaquote, offset, blank)
     this.lookupBlank = blank.sanitize()
     this.wordSet = wordSet
   }
@@ -222,7 +217,7 @@ class WordSelect extends SubstringSelect {
     if (!this.isFullySelected) return
     // Auto-select unique trigrams that overlap the word.
     this.trigramExtent().forEach(i => {
-      let trigramSelect = this.quotation.trigramSelect(i)
+      let trigramSelect = this.anaquote.trigramSelect(i)
       if (trigramSelect.isPartiallySelected) {
         let avail = trigramSelect.available().squeeze()
         if (avail.length === 1) trigramSelect.select(avail[0])
@@ -234,7 +229,7 @@ class WordSelect extends SubstringSelect {
     // TODO: what if leftoverLength is 2 and the last word is 1?
     if (this.offset + this.length === this.quotation.value.length) {
       // Don't unselect the leftover (the final non-trigram).
-      let leftover = this.quotation.leftover
+      let leftover = this.anaquote.leftover
       opt = opt.replaceAt(this.length - leftover.length, leftover)
     }
     return opt
@@ -246,16 +241,15 @@ class WordSelect extends SubstringSelect {
   }
   trigramOptionArrays() {
     let selectedTrigrams = this.quotation.selectedTrigrams
-    let fullySelected = !this.value.includes('?')
-    if (fullySelected) {
+    if (this.isFullySelected) {
       // Act as if the word is unselected, to include all alternative word candidates.
       let allWithoutThis = this.quotation.value.replaceAt(this.offset, this.unselectOption)
       selectedTrigrams = allWithoutThis.match(/.../g)
     }
-    let availableTrigrams = this.quotation.trigrams.subtract(selectedTrigrams)
+    let availableTrigrams = this.anaquote.trigrams.subtract(selectedTrigrams)
     let [first, last] = this.trigramExtent()
     return first.upTo(last).map(i => {
-      if (i === selectedTrigrams.length) return [this.quotation.leftover]
+      if (i === selectedTrigrams.length) return [this.anaquote.leftover]
       let trigram = selectedTrigrams[i]
       if (!trigram.includes('?')) return [trigram]
       let regexp = new RegExp(trigram.replace(/\?/g, '.'))
@@ -285,6 +279,7 @@ class Anaquote {
     })
 
     this.trigrams = trigrams = trigrams.filter(t => t.length === 3).sort()
+    this.leftover = leftover
 
     let unselectedString = '?'.repeat(trigrams.length * 3) + leftover
 
@@ -296,22 +291,27 @@ class Anaquote {
         throw new Error('Enumeration is too short!')
     }
 
-    this.quotation = new Quotation(unselectedString, trigrams, enumeration)
-
-    this.trigramSelects = trigrams.map((t, i) => this.quotation.trigramSelect(i))
-    if (leftover && trigrams.length) {
-      let lastSelect = this.trigramSelects.last()
-      let leftoverBlank = this.quotation.enumeration.trigramBlanks.last()
-      lastSelect.blank = new Blank(lastSelect.blank + leftoverBlank.fillIn(leftover) + leftoverBlank.suffix)
-    }
+    this.quotation = new Quotation(unselectedString, enumeration)
 
     this.wordSet = wordSet
-
-    if (enumeration)
-      this.wordSelects = enumeration.wordBlanks.map((blank, i) => {
-        let offset = enumeration.wordStart(i)
-        return new WordSelect(this.quotation, offset, blank, this.wordSet)
-      })
+  }
+  trigramSelect(i) {
+    return new TrigramSelect(this, i*3, this.quotation.enumeration.trigramBlanks[i])
+  }
+  get trigramSelects () {
+    let trigramSelects = this.trigrams.map((t, i) => this.trigramSelect(i))
+    if (this.leftover && this.trigrams.length) {
+      let lastSelect = trigramSelects.last()
+      let leftoverBlank = this.quotation.enumeration.trigramBlanks.last()
+      lastSelect.blank = new Blank(lastSelect.blank + leftoverBlank.fillIn(this.leftover) + leftoverBlank.suffix)
+    }
+    return trigramSelects
+  }
+  get wordSelects () {
+    return this.enumeration.wordBlanks.map((blank, i) => {
+      let offset = this.enumeration.wordStart(i)
+      return new WordSelect(this, offset, blank, this.wordSet)
+    })
   }
 }
 

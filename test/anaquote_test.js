@@ -14,6 +14,10 @@ test('last', () => {
   assert.equal(1, [1].last())
   assert.equal(3, [1, 2, 3].last())
 })
+test('isEmpty', () => {
+  assert([].isEmpty)
+  refute([1].isEmpty)
+})
 test('remove', () => {
   let array = [1, 2, 3, 1]
   assert.equal([2, 3, 1], array.remove(1))

@@ -1,5 +1,8 @@
 Array.prototype.first = function () { return this[0] }
 Array.prototype.last = function () { return this[this.length - 1] }
+
+Object.defineProperty(Array.prototype, 'isEmpty', { get: function () { return !this.length } })
+              
 Array.prototype.remove = function (x) {
   let i = this.indexOf(x)
   if (i < 0) return this
@@ -26,7 +29,7 @@ Array.prototype.flatMap = function (f) {
 }
 Array.prototype.productWithoutRepeats = function (checkPrefix = x => true, selections = []) {
   if (!checkPrefix(selections)) return []
-  if (this.length === 0) return [[]]
+  if (this.isEmpty) return [[]]
   let options = this[0].subtract(selections)
   let rest = this.slice(1)
   return options.flatMap(selection => {
@@ -150,7 +153,7 @@ class Quotation {
     // Unselect partially-selected trigrams that now have no options.
     for (let i = 0; i < value.length / 3; i++) {
       let select = this.trigramSelect(i)
-      if (select.isPartiallySelected && select.available().length === 0)
+      if (select.isPartiallySelected && select.available().isEmpty)
         this._value = this._value.replaceAt(select.i, '???')
     }
   }

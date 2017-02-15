@@ -144,6 +144,9 @@ class Quotation {
     this.enumeration = enumeration || new Enumeration(value.length.toString())
   }
   toString() { return this.value }
+  replaceAt(offset, string) {
+    this.value = this.value.replaceAt(offset, string)
+  }
   get formattedValue () {
     let blank = this.enumeration.blank
     return blank.prefix + blank.fillIn(this.value) + blank.suffix
@@ -167,20 +170,20 @@ class SubstringSelect {
     return this.quotation.value.substr(this.offset, this.length)
   }
   set value (value) {
-    this.quotation.value = this.quotation.value.replaceAt(this.offset, value)
-    // Unselect partially-selected trigrams that now have no options.
-    for (let i = 0; i < value.length / 3; i++) {
-      let select = this.anaquote.trigramSelect(i)
-      if (select.isPartiallySelected && select.available().isEmpty)
-        select.value = '???'
-    }
+    this.quotation.replaceAt(this.offset, value)
   }
   get isUnselected ()        { return this.value === this.unselectOption }
   get isPartiallySelected () { return !this.isUnselected && !this.isFullySelected }
   get isFullySelected ()     { return !this.value.includes('?') }
 
-  select(value) { this.value = value }
-
+  select(value) {
+    this.value = value
+    // Unselect partially-selected trigrams that now have no options.
+    this.anaquote.trigramSelects.forEach(select => {
+      if (select.isPartiallySelected && select.available().isEmpty)
+        select.value = '???'
+    })
+  }
   options() {
     return [this.unselectOption, this.value, ...this.available()].sort().squeeze()
   }
@@ -207,11 +210,11 @@ class TrigramSelect extends SubstringSelect {
 }
 
 class WordSelect extends SubstringSelect {
-  constructor (anaquote, offset, blank, wordSet) {
+  constructor (anaquote, offset, blank) {
     super(anaquote, offset, blank)
     this.lookupBlank = blank.sanitize()
-    this.wordSet = wordSet
   }
+  get wordSet () { return this.anaquote.wordSet }
   select(word) {
     super.select(word)
     if (!this.isFullySelected) return
@@ -310,7 +313,7 @@ class Anaquote {
   get wordSelects () {
     return this.enumeration.wordBlanks.map((blank, i) => {
       let offset = this.enumeration.wordStart(i)
-      return new WordSelect(this, offset, blank, this.wordSet)
+      return new WordSelect(this, offset, blank)
     })
   }
 }

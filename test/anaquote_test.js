@@ -199,6 +199,12 @@ test('value', () => {
   assert.equal('???', new Quotation('???').value)
 })
 
+test('replaceAt', () => {
+  let model = new Quotation('HELLOWORLD')
+  model.replaceAt(6, 'EIR')
+  assert.equal('HELLOWEIRD', model)
+})
+
 test('formattedValue', () => {
   assert.equal('HELLOWORLD', new Quotation('HELLOWORLD').formattedValue)
   assert.equal('HELLO, WORLD!', new Quotation('HELLOWORLD', new Enumeration('5, 5!')).formattedValue)
@@ -303,10 +309,9 @@ test('select', () => {
 
 test('select unselects partial trigrams that now have no available matches', () => {
   let aq = new Anaquote('SEL VES')
-  aq.trigramSelect(0).select('S??')
-  let model = new TestSubstringSelect(aq, 3)
-  model.select('SEL')
-  assert.equal('???SEL', aq.quotation.value)
+  aq.trigramSelect(1).select('S??')
+  new TestSubstringSelect(aq, 0).select('SEL')
+  assert.equal('SEL???', aq.quotation.value)
 })
 
 test('options', () => {
@@ -388,7 +393,7 @@ test('lookupBlank', () => {
 
 test('wordSet', () => {
   let wordSet = new WordSet(['HELLO'])
-  assert.same(wordSet, new WordSelect(null, 0, new Blank('3'), wordSet).wordSet)
+  assert.same(wordSet, new WordSelect(new Anaquote('', '', wordSet), 0, new Blank('3')).wordSet)
 })
 
 test('select partially selects trigrams on the border that have multiple candidates', () => {
@@ -466,24 +471,24 @@ test('trigramOptionArrays includes the leftover', () => {
 })
 
 test('available permutes options, prunes non-prefixes, and returns words', () => {
-  let aq = new Anaquote('LAY OFF OUT SET')
+  let aq = new Anaquote('LAY OFF OUT SET', '', new WordSet(['LAYOFF', 'OFFLAY', 'OFFSET', 'SETOFF']))
   aq.quotation.value = 'LAYOFFOUT???'
-  let model = new WordSelect(aq, 0, new Blank('6'), new WordSet(['LAYOFF', 'OFFLAY', 'OFFSET', 'SETOFF']))
+  let model = new WordSelect(aq, 0, new Blank('6'))
   assert.equal(['LAYOFF', 'OFFLAY', 'OFFSET', 'SETOFF'], model.available())
 })
 
 test('available selects the proper substrings', () => {
-  let model = new WordSelect(new Anaquote('IDI DIT'), 1, new Blank('3'), new WordSet(['ITI', 'DID']))
+  let model = new WordSelect(new Anaquote('IDI DIT', '', new WordSet(['ITI', 'DID'])), 1, new Blank('3'))
   assert.equal(['ITI', 'DID'], model.available())
 })
 
 test('available includes apostrophes, hyphens, and slashes when looking up words', () => {
   let wordSet = new WordSet(['AND/OR', "CAN'T", 'CATCH-22', "L'OEIL", 'RANT'])
-  let aq = new Anaquote('CAT CH2 2AN DOR LOE ILC ANT')
-  assert.equal(['CATCH22'], new WordSelect(aq, 0, new Blank('5-2'), wordSet).available())
-  assert.equal(['ANDOR'], new WordSelect(aq, 7, new Blank('(3/2)'), wordSet).available())
-  assert.equal(['LOEIL',], new WordSelect(aq, 12, new Blank("1'4"), wordSet).available())
-  assert.equal(['CANT'], new WordSelect(aq, 17, new Blank('3’1'), wordSet).available())
+  let aq = new Anaquote('CAT CH2 2AN DOR LOE ILC ANT', '', wordSet)
+  assert.equal(['CATCH22'], new WordSelect(aq, 0, new Blank('5-2')).available())
+  assert.equal(['ANDOR'], new WordSelect(aq, 7, new Blank('(3/2)')).available())
+  assert.equal(['LOEIL',], new WordSelect(aq, 12, new Blank("1'4")).available())
+  assert.equal(['CANT'], new WordSelect(aq, 17, new Blank('3’1')).available())
 })
 
 suite('Anaquote')

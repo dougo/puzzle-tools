@@ -140,23 +140,13 @@ class Enumeration {
 
 class Quotation {
   constructor (value, trigrams = [], enumeration) {
-    this._value = value
+    this.value = value
     this.trigrams = trigrams
     this.enumeration = enumeration || new Enumeration(value.length.toString())
     let leftoverLength = value.length % 3
     this.leftover = value.substr(-leftoverLength, leftoverLength)
   }
   toString() { return this.value }
-  get value () { return this._value }
-  set value (value) {
-    this._value = value
-    // Unselect partially-selected trigrams that now have no options.
-    for (let i = 0; i < value.length / 3; i++) {
-      let select = this.trigramSelect(i)
-      if (select.isPartiallySelected && select.available().isEmpty)
-        this._value = this._value.replaceAt(select.i, '???')
-    }
-  }
   get formattedValue () {
     let blank = this.enumeration.blank
     return blank.prefix + blank.fillIn(this.value) + blank.suffix
@@ -169,60 +159,69 @@ class Quotation {
   }
 }
 
-class TrigramSelect {
-  constructor (trigrams, quotation, i, blank) {
-    this.trigrams = trigrams
+class SubstringSelect {
+  constructor (quotation, offset, blank) {
     this.quotation = quotation
-    this.i = i
-    this.blank = blank || new Blank('3')
+    this.offset = offset
+    this.blank = blank
   }
+  get length () { return this.blank.length }
+  get unselectOption () { return '?'.repeat(this.length) }
+
   get value () {
-    return this.quotation.value.substr(this.i, 3)
+    return this.quotation.value.substr(this.offset, this.length)
   }
-  select(value) {
-    this.quotation.value = this.quotation.value.replaceAt(this.i, value)
+  set value (value) {
+    this.quotation.value = this.quotation.value.replaceAt(this.offset, value)
+    // Unselect partially-selected trigrams that now have no options.
+    for (let i = 0; i < value.length / 3; i++) {
+      let select = this.quotation.trigramSelect(i)
+      if (select.isPartiallySelected && select.available().isEmpty)
+        select.value = '???'
+    }
   }
-  get isUnselected ()        { return this.value === '???' }
+  get isUnselected ()        { return this.value === this.unselectOption }
   get isPartiallySelected () { return !this.isUnselected && !this.isFullySelected }
   get isFullySelected ()     { return !this.value.includes('?') }
 
-  available() {
-    let trigram = this.value
-    let otherSelections = this.quotation.selectedTrigrams.remove(trigram)
-    let avail = this.trigrams.subtract(otherSelections)
-    if (!this.isFullySelected) {
-      let regexp = new RegExp(trigram.replace(/\?/g, '.'))
-      avail = avail.filter(t => regexp.test(t))
-    }
-    return avail
-  }
+  select(value) { this.value = value }
+
   options() {
-    let opts = this.available()
-    if (!this.isFullySelected) opts.unshift(this.value)
-    return ['???', ...opts].squeeze()
+    return [this.unselectOption, this.value, ...this.available()].sort().squeeze()
   }
   formattedOptions() {
     return this.blank.formatOptions(this.options())
   }
 }
 
-class WordSelect {
+class TrigramSelect extends SubstringSelect {
+  constructor (trigrams, quotation, offset, blank = new Blank('3')) {
+    super(quotation, offset, blank)
+    this.trigrams = trigrams
+  }
+  available() {
+    let trigram = this.value
+    let otherSelections = this.quotation.selectedTrigrams.remove(trigram)
+    let avail = this.trigrams.subtract(otherSelections)
+    if (this.isPartiallySelected) {
+      let regexp = new RegExp(trigram.replace(/\?/g, '.'))
+      avail = avail.filter(t => regexp.test(t))
+    }
+    return avail
+  }
+}
+
+class WordSelect extends SubstringSelect {
   constructor (quotation, offset, blank, wordSet) {
-    this.quotation = quotation
-    this.offset = offset
-    this.blank = blank
-    this.length = blank.length
+    super(quotation, offset, blank)
     this.lookupBlank = blank.sanitize()
     this.wordSet = wordSet
   }
-  get value () {
-    return this.quotation.value.substr(this.offset, this.length)
-  }
   select(word) {
-    this.quotation.value = this.quotation.value.replaceAt(this.offset, word)
-    if (word.includes('?')) return
+    super.select(word)
+    if (!this.isFullySelected) return
     // Auto-select unique trigrams that overlap the word.
-    this.trigramRange().forEach(i => {
+    this.trigramExtent().forEach(i => {
       let trigramSelect = this.quotation.trigramSelect(i)
       if (trigramSelect.isPartiallySelected) {
         let avail = trigramSelect.available().squeeze()
@@ -230,16 +229,17 @@ class WordSelect {
       }
     })
   }
-  unselectOption() {
-    let all = this.quotation.value
-    if (this.offset + this.length === all.length) {
+  get unselectOption () {
+    let opt = super.unselectOption
+    // TODO: what if leftoverLength is 2 and the last word is 1?
+    if (this.offset + this.length === this.quotation.value.length) {
       // Don't unselect the leftover (the final non-trigram).
       let leftover = this.quotation.leftover
-      return '?'.repeat(this.length - leftover.length) + leftover
+      opt = opt.replaceAt(this.length - leftover.length, leftover)
     }
-    return '?'.repeat(this.length)
+    return opt
   }
-  trigramRange() {
+  trigramExtent() {
     let startTrigram = Math.floor(this.offset / 3)
     let endTrigram = Math.floor((this.offset + this.length - 1) / 3)
     return [startTrigram, endTrigram]
@@ -249,11 +249,11 @@ class WordSelect {
     let fullySelected = !this.value.includes('?')
     if (fullySelected) {
       // Act as if the word is unselected, to include all alternative word candidates.
-      let allWithoutThis = this.quotation.value.replaceAt(this.offset, this.unselectOption())
+      let allWithoutThis = this.quotation.value.replaceAt(this.offset, this.unselectOption)
       selectedTrigrams = allWithoutThis.match(/.../g)
     }
     let availableTrigrams = this.quotation.trigrams.subtract(selectedTrigrams)
-    let [first, last] = this.trigramRange()
+    let [first, last] = this.trigramExtent()
     return first.upTo(last).map(i => {
       if (i === selectedTrigrams.length) return [this.quotation.leftover]
       let trigram = selectedTrigrams[i]
@@ -262,18 +262,12 @@ class WordSelect {
       return availableTrigrams.filter(t => regexp.test(t))
     })
   }
-  candidates() {
+  available() {
     let permutationToWord = p => p.join('').substr(this.offset % 3, this.length)
     return this.trigramOptionArrays().productWithoutRepeats(perm => {
       let prefix = this.lookupBlank.fillIn(permutationToWord(perm))
       return this.wordSet.hasPrefix(prefix, this.lookupBlank.formattedLength)
     }).map(permutationToWord)
-  }
-  options() {
-    return [this.unselectOption(), this.value, ...this.candidates()].sort().squeeze()
-  }
-  formattedOptions() {
-    return this.blank.formatOptions(this.options())
   }
 }
 

@@ -64,7 +64,7 @@ class WordSet extends Set {
 }
 
 class Blank {
-  constructor (string) {
+  constructor (string, offset = 0) {
     this._string = string
     this._tokens = string.split(/(\d+)/).map(token => {
       let len = Number.parseInt(token)
@@ -74,25 +74,27 @@ class Blank {
     this.suffix = this._tokens.last()
     this.length = this._tokens.filter(t => typeof(t) === 'number').sum()
     this.formattedLength = this._tokens.slice(1, -1).sum(t => typeof(t) === 'number' ? t : t.length)
+    this.offset = offset
   }
   toString() { return this._string }
 
   trigramBlanks() {
-    let blanks = [], str = '', need = 3
+    let blanks = [], str = '', need = 3, offset = 0
     this._tokens.forEach(t => {
       if (typeof t === 'number') {
         while (t > need) {
           t -= need
           if (need > 0) str += need
-          blanks.push(new Blank(str))
+          blanks.push(new Blank(str, offset))
           str = ''
           need = 3
+          offset += 3
         }
         need -= t
       }
       str += t
     })
-    if (str.length > 0) blanks.push(new Blank(str))
+    if (str.length > 0) blanks.push(new Blank(str, offset))
     return blanks
   }
   fillIn(fill) {
@@ -110,7 +112,7 @@ class Blank {
   }
   sanitize() {
     // Translate smart-apostrophe to ASCII apostrophe, for looking up in the word list.
-    return new Blank(this._string.replace(/\u2019/g, "'"))
+    return new Blank(this._string.replace(/\u2019/g, "'"), this.offset)
   }
   formatOptions(options) {
     return options.map(o => [o, this.fillIn(o)])
@@ -121,21 +123,16 @@ class Enumeration {
   constructor (string) {
     this.blank = new Blank(string)
     this.trigramBlanks = this.blank.trigramBlanks()
-    this.wordBlanks = string.trim().match(/[^\d]*\d+[^\s]*\s*/g).map(s => new Blank(s))
 
-    let total = 0
-    this.wordStarts = this.wordBlanks.map(b => {
-      let start = total
-      total += b.length
-      return start
+    let offset = 0
+    this.wordBlanks = string.trim().match(/[^\d]*\d+[^\s]*\s*/g).map(s => {
+      let blank = new Blank(s, offset)
+      offset += blank.length
+      return blank
     })
   }
   toString() { return this.blank.toString() }
   get length () { return this.blank.length }
-
-  wordStart(i) {
-    return this.wordStarts[i]
-  }
 }
 
 class Quotation {
@@ -157,11 +154,11 @@ class Quotation {
 }
 
 class SubstringSelect {
-  constructor (anaquote, offset, blank) {
+  constructor (anaquote, blank) {
     this.anaquote = anaquote
-    this.offset = offset
     this.blank = blank
   }
+  get offset () { return this.blank.offset }
   get quotation () { return this.anaquote.quotation }
   get length () { return this.blank.length }
   get unselectOption () { return '?'.repeat(this.length) }
@@ -193,9 +190,6 @@ class SubstringSelect {
 }
 
 class TrigramSelect extends SubstringSelect {
-  constructor (anaquote, offset, blank = new Blank('3')) {
-    super(anaquote, offset, blank)
-  }
   get trigrams () { return this.anaquote.trigrams }
   available() {
     let trigram = this.value
@@ -210,8 +204,8 @@ class TrigramSelect extends SubstringSelect {
 }
 
 class WordSelect extends SubstringSelect {
-  constructor (anaquote, offset, blank) {
-    super(anaquote, offset, blank)
+  constructor (anaquote, blank) {
+    super(anaquote, blank)
     this.lookupBlank = blank.sanitize()
   }
   get wordSet () { return this.anaquote.wordSet }
@@ -299,7 +293,7 @@ class Anaquote {
     this.wordSet = wordSet
   }
   trigramSelect(i) {
-    return new TrigramSelect(this, i*3, this.quotation.enumeration.trigramBlanks[i])
+    return new TrigramSelect(this, this.quotation.enumeration.trigramBlanks[i])
   }
   get trigramSelects () {
     let trigramSelects = this.trigrams.map((t, i) => this.trigramSelect(i))
@@ -311,10 +305,7 @@ class Anaquote {
     return trigramSelects
   }
   get wordSelects () {
-    return this.enumeration.wordBlanks.map((blank, i) => {
-      let offset = this.enumeration.wordStart(i)
-      return new WordSelect(this, offset, blank)
-    })
+    return this.enumeration.wordBlanks.map(blank => new WordSelect(this, blank))
   }
 }
 

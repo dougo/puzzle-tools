@@ -150,8 +150,7 @@ class Quotation {
     // Unselect partially-selected trigrams that now have no options.
     for (let i = 0; i < value.length / 3; i++) {
       let select = this.trigramSelect(i)
-      let t = select.value
-      if (t !== '???' && t.includes('?') && select.available().length === 0)
+      if (select.isPartiallySelected && select.available().length === 0)
         this._value = this._value.replaceAt(select.i, '???')
     }
   }
@@ -180,20 +179,23 @@ class TrigramSelect {
   select(value) {
     this.quotation.value = this.quotation.value.replaceAt(this.i, value)
   }
+  get isUnselected ()        { return this.value === '???' }
+  get isPartiallySelected () { return !this.isUnselected && !this.isFullySelected }
+  get isFullySelected ()     { return !this.value.includes('?') }
+
   available() {
     let trigram = this.value
     let otherSelections = this.quotation.selectedTrigrams.remove(trigram)
     let avail = this.trigrams.subtract(otherSelections)
-    if (trigram.includes('?')) {
+    if (!this.isFullySelected) {
       let regexp = new RegExp(trigram.replace(/\?/g, '.'))
       avail = avail.filter(t => regexp.test(t))
     }
     return avail
   }
   options() {
-    let trigram = this.value
     let opts = this.available()
-    if (trigram.includes('?')) opts.unshift(trigram)
+    if (!this.isFullySelected) opts.unshift(this.value)
     return ['???', ...opts].squeeze()
   }
   formattedOptions() {
@@ -219,7 +221,7 @@ class WordSelect {
     // Auto-select unique trigrams that overlap the word.
     this.trigramRange().forEach(i => {
       let trigramSelect = this.quotation.trigramSelect(i)
-      if (trigramSelect && trigramSelect.value.includes('?')) {
+      if (trigramSelect.isPartiallySelected) {
         let avail = trigramSelect.available().squeeze()
         if (avail.length === 1) trigramSelect.select(avail[0])
       }

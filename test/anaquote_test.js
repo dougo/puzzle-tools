@@ -275,6 +275,23 @@ test('value', () => {
   assert.equal('LOW', new TrigramSelect([], new Quotation('HELLOWORLD'), 3).value)
 })
 
+
+test('isUnselected', () => {
+  assert(new TrigramSelect([], new Quotation('HEL???ORLD'), 3).isUnselected)
+  refute(new TrigramSelect([], new Quotation('HELL??ORLD'), 3).isUnselected)
+  refute(new TrigramSelect([], new Quotation('HELLOWORLD'), 3).isUnselected)
+})
+test('isPartiallySelected', () => {
+  refute(new TrigramSelect([], new Quotation('HEL???ORLD'), 3).isPartiallySelected)
+  assert(new TrigramSelect([], new Quotation('HELL??ORLD'), 3).isPartiallySelected)
+  refute(new TrigramSelect([], new Quotation('HELLOWORLD'), 3).isPartiallySelected)
+})
+test('isFullySelected', () => {
+  refute(new TrigramSelect([], new Quotation('HEL???ORLD'), 3).isFullySelected)
+  refute(new TrigramSelect([], new Quotation('HELL??ORLD'), 3).isFullySelected)
+  assert(new TrigramSelect([], new Quotation('HELLOWORLD'), 3).isFullySelected)
+})
+
 test('select', () => {
   let q = new Quotation('HEL???ORLD')
   let model = new TrigramSelect([], q, 3)

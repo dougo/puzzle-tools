@@ -206,14 +206,14 @@ class TrigramSelect extends SubstringSelect {
 class WordSelect extends SubstringSelect {
   constructor (anaquote, blank) {
     super(anaquote, blank)
-    this.lookupBlank = blank.sanitize()
+    this._lookupBlank = blank.sanitize()
   }
-  get wordSet () { return this.anaquote.wordSet }
+  get _wordSet () { return this.anaquote.wordSet }
   select(word) {
     super.select(word)
     if (!this.isFullySelected) return
     // Auto-select unique trigrams that overlap the word.
-    this.trigramExtent().forEach(i => {
+    this._trigramExtent().forEach(i => {
       let trigramSelect = this.anaquote.trigramSelect(i)
       if (trigramSelect.isPartiallySelected) {
         let avail = trigramSelect.available().squeeze()
@@ -231,12 +231,12 @@ class WordSelect extends SubstringSelect {
     }
     return opt
   }
-  trigramExtent() {
+  _trigramExtent() {
     let startTrigram = Math.floor(this.offset / 3)
     let endTrigram = Math.floor((this.offset + this.length - 1) / 3)
     return [startTrigram, endTrigram]
   }
-  trigramOptionArrays() {
+  _trigramOptionArrays() {
     let selectedTrigrams = this.quotation.selectedTrigrams
     if (this.isFullySelected) {
       // Act as if the word is unselected, to include all alternative word candidates.
@@ -244,7 +244,7 @@ class WordSelect extends SubstringSelect {
       selectedTrigrams = allWithoutThis.match(/.../g)
     }
     let availableTrigrams = this.anaquote.trigrams.subtract(selectedTrigrams)
-    let [first, last] = this.trigramExtent()
+    let [first, last] = this._trigramExtent()
     return first.upTo(last).map(i => {
       if (i === selectedTrigrams.length) return [this.anaquote.leftover]
       let trigram = selectedTrigrams[i]
@@ -255,9 +255,9 @@ class WordSelect extends SubstringSelect {
   }
   available() {
     let permutationToWord = p => p.join('').substr(this.offset % 3, this.length)
-    return this.trigramOptionArrays().productWithoutRepeats(perm => {
-      let prefix = this.lookupBlank.fillIn(permutationToWord(perm))
-      return this.wordSet.hasPrefix(prefix, this.lookupBlank.formattedLength)
+    return this._trigramOptionArrays().productWithoutRepeats(perm => {
+      let prefix = this._lookupBlank.fillIn(permutationToWord(perm))
+      return this._wordSet.hasPrefix(prefix, this._lookupBlank.formattedLength)
     }).map(permutationToWord)
   }
 }

@@ -388,17 +388,6 @@ test('is a SubstringSelect', () => {
   assert.instanceOf(SubstringSelect, new WordSelect(null, new Blank('17')))
 })
 
-test('lookupBlank', () => {
-  let blank = new WordSelect(null, new Blank('3’1')).lookupBlank
-  assert.instanceOf(Blank, blank)
-  assert.equal("3'1", blank)
-})
-
-test('wordSet', () => {
-  let wordSet = new WordSet(['HELLO'])
-  assert.same(wordSet, new WordSelect(new Anaquote('', '', wordSet), new Blank('3')).wordSet)
-})
-
 test('select partially selects trigrams on the border that have multiple candidates', () => {
   let aq = new Anaquote('HEL LOW ORL DWI DOW')
   let model = new WordSelect(aq, new Blank('5', 5))
@@ -426,63 +415,48 @@ test('unselectOption includes the leftover', () => {
   assert.equal('????D', new WordSelect(aq, new Blank('5', 5)).unselectOption)
 })
 
-test('trigramExtent', () => {
-  assert.equal([0, 0], new WordSelect(null, new Blank('3')).trigramExtent())
-  assert.equal([1, 1], new WordSelect(null, new Blank('3', 3)).trigramExtent())
-  assert.equal([0, 1], new WordSelect(null, new Blank('6')).trigramExtent())
-  assert.equal([0, 2], new WordSelect(null, new Blank('7')).trigramExtent())
-  assert.equal([1, 2], new WordSelect(null, new Blank('5', 3)).trigramExtent())
-  assert.equal([0, 2], new WordSelect(null, new Blank('5', 2)).trigramExtent())
-})
-
-test('trigramOptionArrays includes trigrams for each slot in word range', () => {
-  let model = new WordSelect(new Anaquote('LAY OFF OUT SET'), new Blank('6'))
-  assert.equal([['LAY', 'OFF', 'OUT', 'SET'], ['LAY', 'OFF', 'OUT', 'SET']], model.trigramOptionArrays())
-})
-
-test('trigramOptionArrays excludes trigrams selected elsewhere', () => {
-  let aq = new Anaquote('LAY OFF OUT SET')
-  aq.trigramSelect(2).select('LAY')
+test('available uses each trigram at most once', () => {
+  let words = ['LAYOFF', 'LAYOUT', 'OFFLAY', 'OFFSET', 'OUTLAY', 'OUTSET', 'SETOFF', 'SETOUT']
+  let aq = new Anaquote('LAY OFF OUT SET', '', new WordSet([...words, 'LAYLAY', 'OUTOUT']))
   let model = new WordSelect(aq, new Blank('6'))
-  assert.equal([['OFF', 'OUT', 'SET'], ['OFF', 'OUT', 'SET']], model.trigramOptionArrays())
+  assert.equal(words, model.available())
 })
 
-test('trigramOptionArrays only includes selected trigrams in word range', () => {
-  let aq = new Anaquote('LAY OFF OUT SET')
-  aq.trigramSelect(0).select('LAY')
-  let model = new WordSelect(aq, new Blank('6'))
-  assert.equal([['LAY'], ['OFF', 'OUT', 'SET']], model.trigramOptionArrays())
-})
-
-test('trigramOptionArrays filters partially-selected trigrams', () => {
-  let aq = new Anaquote('AGL ADG IRL')
-  aq.trigramSelect(0).select('A??')
-  let model = new WordSelect(aq, new Blank('4', 1))
-  assert.equal([['ADG', 'AGL'], ['ADG', 'AGL', 'IRL']], model.trigramOptionArrays())
-})
-
-test('trigramOptionArrays includes all unselected-elsewhere trigrams when word is fully selected', () => {
-  let aq = new Anaquote('LAY OFF OUT SET')
-  aq.quotation.value = 'LAYOFFOUT???'
-  let model = new WordSelect(aq, new Blank('6'))
-  assert.equal([['LAY', 'OFF', 'SET'], ['LAY', 'OFF', 'SET']], model.trigramOptionArrays())
-})
-
-test('trigramOptionArrays includes the leftover', () => {
-  let model = new WordSelect(new Anaquote('FUN WAR D'), new Blank('4', 3))
-  assert.equal([['FUN', 'WAR'], ['D']], model.trigramOptionArrays())
-})
-
-test('available permutes options, prunes non-prefixes, and returns words', () => {
-  let aq = new Anaquote('LAY OFF OUT SET', '', new WordSet(['LAYOFF', 'OFFLAY', 'OFFSET', 'SETOFF']))
-  aq.quotation.value = 'LAYOFFOUT???'
+test('available omits trigrams selected elsewhere', () => {
+  let words = ['LAYOFF', 'LAYOUT', 'OFFLAY', 'OFFSET', 'OUTLAY', 'OUTSET', 'SETOFF', 'SETOUT']
+  let aq = new Anaquote('LAY OFF OUT SET', '', new WordSet(words))
+  aq.trigramSelect(2).select('OUT')
   let model = new WordSelect(aq, new Blank('6'))
   assert.equal(['LAYOFF', 'OFFLAY', 'OFFSET', 'SETOFF'], model.available())
 })
 
-test('available selects the proper substrings', () => {
+test('available filters if word is partially selected', () => {
+  let words = ['LAYOFF', 'LAYOUT', 'OFFLAY', 'OFFSET', 'OUTLAY', 'OUTSET', 'SETOFF', 'SETOUT']
+  let aq = new Anaquote('LAY OFF OUT SET', '', new WordSet(words))
+  let model = new WordSelect(aq, new Blank('6'))
+  model.select('LAY???')
+  assert.equal(['LAYOFF', 'LAYOUT'], model.available())
+})
+
+test('available does not filter if word is fully selected', () => {
+  let words = ['LAYOFF', 'LAYOUT', 'OFFLAY', 'OFFSET', 'OUTLAY', 'OUTSET', 'SETOFF', 'SETOUT']
+  let aq = new Anaquote('LAY OFF OUT SET', '', new WordSet(words))
+  aq.trigramSelect(2).select('OUT')
+  let model = new WordSelect(aq, new Blank('6'))
+  model.select('LAYOFF')
+  assert.equal(['LAYOFF', 'OFFLAY', 'OFFSET', 'SETOFF'], model.available())
+})
+
+test('available uses offset to select substrings', () => {
   let model = new WordSelect(new Anaquote('IDI DIT', '', new WordSet(['ITI', 'DID'])), new Blank('3', 1))
   assert.equal(['ITI', 'DID'], model.available())
+})
+
+test('available filters if overlapping trigram is partially selected', () => {
+  let aq = new Anaquote('ALE AST IWH', '', new WordSet(['LEAST', 'STALE', 'WHALE']))
+  aq.trigramSelect(0).select('A??')
+  let model = new WordSelect(aq, new Blank('5', 1))
+  assert.equal(['LEAST', 'STALE'], model.available())
 })
 
 test('available includes apostrophes, hyphens, and slashes when looking up words', () => {
@@ -492,6 +466,11 @@ test('available includes apostrophes, hyphens, and slashes when looking up words
   assert.equal(['ANDOR'], new WordSelect(aq, new Blank('(3/2)', 7)).available())
   assert.equal(['LOEIL',], new WordSelect(aq, new Blank("1'4", 12)).available())
   assert.equal(['CANT'], new WordSelect(aq, new Blank('3’1', 17)).available())
+})
+
+test('available includes the leftover', () => {
+  let model = new WordSelect(new Anaquote('FUN WAR D', '', new WordSet(['FUND', 'WARD'])), new Blank('4', 3))
+  assert.equal(['FUND', 'WARD'], model.available())
 })
 
 suite('Anaquote')
@@ -600,7 +579,7 @@ test('wordSelects', () => {
   assert.equal(4, selects[0].length)
   assert.equal(4, selects[1].offset)
   assert.equal(3, selects[1].length)
-  assert.same(model.wordSet, selects[0].wordSet)
+  assert.same(model, selects[0].anaquote)
   assert.same(model.enumeration.wordBlanks[0], selects[0].blank)
 })
 

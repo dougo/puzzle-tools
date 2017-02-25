@@ -968,4 +968,6 @@ test('full sentence', () => {
   let enumeration = "3 6 7 6 2 3 3 5 9 2 4 5'1 8 (3 4'1 11 7 1 5)."
   let model = new Anaquote(trigrams, enumeration, wordSet)
   let view = new AnaquoteView(model).render()
+  view.trigrams.subviews.first().$select.val('THE').change()
+  view.trigrams.subviews.first().$select.val('???').change()
 })

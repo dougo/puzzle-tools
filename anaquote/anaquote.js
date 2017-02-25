@@ -204,11 +204,6 @@ class TrigramSelect extends SubstringSelect {
 }
 
 class WordSelect extends SubstringSelect {
-  constructor (anaquote, blank) {
-    super(anaquote, blank)
-    this._lookupBlank = blank.sanitize()
-  }
-  get _wordSet () { return this.anaquote.wordSet }
   select(word) {
     super.select(word)
     if (!this.isFullySelected) return
@@ -231,34 +226,57 @@ class WordSelect extends SubstringSelect {
     }
     return opt
   }
-  _trigramExtent() {
-    let startTrigram = Math.floor(this.offset / 3)
-    let endTrigram = Math.floor((this.offset + this.length - 1) / 3)
-    return [startTrigram, endTrigram]
-  }
-  _trigramOptionArrays() {
+  available() {
     let selectedTrigrams = this.quotation.selectedTrigrams
     if (this.isFullySelected) {
       // Act as if the word is unselected, to include all alternative word candidates.
       let allWithoutThis = this.quotation.value.replaceAt(this.offset, this.unselectOption)
       selectedTrigrams = allWithoutThis.match(/.../g)
     }
-    let availableTrigrams = this.anaquote.trigrams.subtract(selectedTrigrams)
-    let [first, last] = this._trigramExtent()
-    return first.upTo(last).map(i => {
-      if (i === selectedTrigrams.length) return [this.anaquote.leftover]
-      let trigram = selectedTrigrams[i]
-      if (!trigram.includes('?')) return [trigram]
-      let regexp = new RegExp(trigram.replace(/\?/g, '.'))
-      return availableTrigrams.filter(t => regexp.test(t))
+    let unselectedTrigrams = new Set(this.anaquote.trigrams.subtract(selectedTrigrams))
+    return this._trigramSequencesThatFormWords.filter(trigrams => {
+      return this._isAllowedTrigramSequence(trigrams, selectedTrigrams, unselectedTrigrams)
+    }).map(trigrams => {
+      return this._wordFromTrigramSequence(trigrams)
     })
   }
-  available() {
-    let permutationToWord = p => p.join('').substr(this.offset % 3, this.length)
-    return this._trigramOptionArrays().productWithoutRepeats(perm => {
-      let prefix = this._lookupBlank.fillIn(permutationToWord(perm))
-      return this._wordSet.hasPrefix(prefix, this._lookupBlank.formattedLength)
-    }).map(permutationToWord)
+  get _trigramSequencesThatFormWords () {
+    if (!this._tstfw) {
+      let trigramOptionArrays = this._startTrigram.upTo(this._endTrigram).map(i => {
+        if (i === this.anaquote.trigrams.length) return [this.anaquote.leftover]
+        return this.anaquote.trigrams
+      })
+      this._tstfw = trigramOptionArrays.productWithoutRepeats(trigramsPrefix => {
+        return this._isWordPrefix(this._wordFromTrigramSequence(trigramsPrefix))
+      })
+    }
+    return this._tstfw
+  }
+  get _startTrigram () { return Math.floor(this.offset / 3) }
+  get _endTrigram   () { return Math.floor((this.offset + this.length - 1) / 3) }
+  _trigramExtent    () { return [this._startTrigram, this._endTrigram] }
+
+  _isAllowedTrigramSequence(seq, selectedTrigrams, unselectedTrigrams) {
+    return seq.every((t, i) => {
+      return this._isAllowedTrigram(t, i + this._startTrigram, selectedTrigrams, unselectedTrigrams)
+    })
+  }
+  _isAllowedTrigram(t, i, selectedTrigrams, unselectedTrigrams) {
+    if (i === selectedTrigrams.length) return true
+    let trigram = selectedTrigrams[i]
+    if (!trigram.includes('?')) return t === trigram
+    let regexp = new RegExp(trigram.replace(/\?/g, '.'))
+    return regexp.test(t) && unselectedTrigrams.has(t)
+  }
+  _wordFromTrigramSequence(seq) {
+    return seq.join('').substr(this.offset % 3, this.length)
+  }
+  _isWordPrefix(letters) {
+    let prefixWithPunctuation = this._lookupBlank.fillIn(letters)
+    return this.anaquote.wordSet.hasPrefix(prefixWithPunctuation, this._lookupBlank.formattedLength)
+  }
+  get _lookupBlank () {
+    return this.__lookupBlank = this.__lookupBlank || this.blank.sanitize()
   }
 }
 

@@ -4,20 +4,13 @@ load('anaquote/anaquote.js')
 
 suite('Array utils')
 
-test('first', () => {
-  assert.equal(undefined, [].first())
-  assert.equal(1, [1].first())
-  assert.equal(1, [1, 2, 3].first())
-})
-test('last', () => {
-  assert.equal(undefined, [].last())
-  assert.equal(1, [1].last())
-  assert.equal(3, [1, 2, 3].last())
-})
-test('isEmpty', () => {
-  assert([].isEmpty)
-  refute([1].isEmpty)
-})
+test('first returns undefined when empty', () => { refute.defined([].first()) })
+test('last returns the last element',      () => { assert.equal(3, [1, 2, 3].last()) })
+test('first returns the first element',    () => { assert.equal(1, [1, 2, 3].first()) })
+test('last returns undefined when empty',  () => { refute.defined([].last()) })
+test('isEmpty is truthy when empty',       () => { assert([].isEmpty) })
+test('isEmpty is falsy when nonempty',     () => { refute([1].isEmpty) })
+
 test('remove', () => {
   let array = [1, 2, 3, 1]
   assert.equal([2, 3, 1], array.remove(1))
@@ -511,7 +504,7 @@ test('leftover', () => {
 
 test('enumeration', () => {
   assert.equal('5 5!', new Anaquote('HEL LOW ORL D', '5 5!').enumeration)
-  assert.equal(undefined, new Anaquote('EXT RAV AGA NZA').enumeration)
+  refute.defined(new Anaquote('EXT RAV AGA NZA').enumeration)
 })
 
 test('wordSet', () => {
@@ -727,7 +720,7 @@ test('selecting an option re-renders', () => {
 
 test('omits words view when enumeration is blank', () => {
   let view = new AnaquoteView(new Anaquote('EXT RAV AGA NZA'))
-  assert.equal(undefined, view.words)
+  refute.defined(view.words)
   assert.equal(2, view.$el.children().length)
   view.render()
 })
@@ -823,7 +816,7 @@ test('clearMessage removes the message from the form', () => {
   view.setMessage('reducing sinusoidal depleneration...')
   view.clearMessage()
   assert.equal(3, view.$el.children('div').length)
-  assert.equal(undefined, view.$message)
+  refute.defined(view.$message)
 })
 
 test('clearMessage with no message', () => {
@@ -903,7 +896,7 @@ test('fetchWords', done => {
   
   window.setTimeout(() => {
     try {
-      assert.equal(undefined, app.input.$message)
+      refute.defined(app.input.$message)
       assert.instanceOf(WordSet, app.words)
       assert(app.words.hasPrefix('H', 2))
 
@@ -931,10 +924,10 @@ test('fetchWords handles failure', (done) => {
     assert(console.log.calledWith('Failed to fetch word list: Not Found'))
     assert.hasClass('error', app.input.$message)
     assert.hasText('Failed to fetch word list: Not Found', app.input.$message)
-    assert.equal(undefined, app.words)
+    refute.defined(app.words)
 
     clock.tick(2000)
-    assert.equal(undefined, app.input.$message)
+    refute.defined(app.input.$message)
   } catch (err) {
     error = err
   }

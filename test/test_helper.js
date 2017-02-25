@@ -12,9 +12,18 @@ function load(filename) {
 }
 
 
-// TODO: make the below into a minitest-jquery package?
-
 const { assert, refute, utils } = require('minitest')
+
+// TODO: add to minitest.js?
+
+assert.defined = (obj, msg) => {
+  refute(obj === undefined, utils.message(msg, 'Expected %{obj} to be defined', { obj: obj }))
+}
+refute.defined = (obj, msg) => {
+  assert(obj === undefined, utils.message(msg, 'Expected %{obj} to be undefined', { obj: obj }))
+}
+
+// TODO: make the below into a minitest-jquery package?
 
 assert.is = (selector, $obj, msg) => {
   assert($obj.is(selector),
